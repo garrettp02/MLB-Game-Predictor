@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 
@@ -38,7 +38,15 @@ X = df[["home_id", "away_id"]]
 y = df["winner_id"]
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-clf = RandomForestClassifier(n_estimators=200, max_depth=10, random_state=42, class_weight='balanced')
+clf = XGBClassifier(
+    n_estimators=200,
+    max_depth=6,
+    learning_rate=0.1,
+    use_label_encoder=False,
+    eval_metric='mlogloss',
+    verbosity=0
+)
+
 clf.fit(X_train, y_train)
 
 # === Report performance ===
