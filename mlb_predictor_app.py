@@ -268,30 +268,35 @@ if page == "Daily Matchups":
 # === Live News Feeds ===
 elif page == "Team News Feeds":
     st.title("📰 MLB Team News Feed")
-    selected_team = st.selectbox("Choose a team:", sorted(team_map.keys()))
 
+    extended_team_list = sorted(team_map.keys()) + ["AL", "NL"]
+    selected_team = st.selectbox("Choose a team or league:", extended_team_list)
 
-
-
+    team_logos["AL"] = "https://upload.wikimedia.org/wikipedia/en/thumb/2/25/American_League_logo.svg/1200px-American_League_logo.svg.png"
+    team_logos["NL"] = "https://upload.wikimedia.org/wikipedia/en/thumb/e/ec/National_League.svg/1200px-National_League.svg.png"
 
     if selected_team in team_logos:
         st.image(team_logos[selected_team], width=150)
 
     st.subheader(f"Latest news about {selected_team}")
 
-    team_name_map = {
-        "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
-        "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
-        "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
-        "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
-        "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
-        "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
-        "SF": "giants", "STL": "cardinals", "TB": "rays", "TEX": "rangers",
-        "TOR": "bluejays", "WSH": "nationals"
-    }
-
-    team_name = team_name_map.get(selected_team, selected_team.lower())
-    feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
+    if selected_team == "AL":
+        feed_url = "https://www.espn.com/espn/rss/mlb/news"
+    elif selected_team == "NL":
+        feed_url = "https://www.espn.com/espn/rss/mlb/news"
+    else:
+        team_name_map = {
+            "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
+            "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
+            "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
+            "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
+            "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
+            "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
+            "SF": "giants", "STL": "cardinals", "TB": "rays", "TEX": "rangers",
+            "TOR": "bluejays", "WSH": "nationals"
+        }
+        team_name = team_name_map.get(selected_team, selected_team.lower())
+        feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
 
     feed = feedparser.parse(feed_url)
     if not feed.entries:
@@ -309,30 +314,32 @@ elif page == "Team News Feeds":
             st.markdown("---")
 
     # === Show upcoming games ===
-    st.subheader("📅 Upcoming Schedule")
-    team_id = mlb_team_ids.get(selected_team)
-    if team_id:
-        today = datetime.date.today()
-        end = today + datetime.timedelta(days=14)
-        url = f"https://statsapi.mlb.com/api/v1/schedule?teamId={team_id}&sportId=1&startDate={today}&endDate={end}"
-        response = requests.get(url)
-        data = response.json()
+    if selected_team not in ["AL", "NL"]:
+        st.subheader("📅 Upcoming Schedule")
+        team_id = mlb_team_ids.get(selected_team)
+        if team_id:
+            today = datetime.date.today()
+            end = today + datetime.timedelta(days=14)
+            url = f"https://statsapi.mlb.com/api/v1/schedule?teamId={team_id}&sportId=1&startDate={today}&endDate={end}"
+            response = requests.get(url)
+            data = response.json()
 
-        games = data.get("dates", [])
-        if not games:
-            st.info("No upcoming games found.")
+            games = data.get("dates", [])
+            if not games:
+                st.info("No upcoming games found.")
+            else:
+                for day in games[:5]:
+                    for game in day["games"]:
+                        opponent = game["teams"]["away"]["team"] if game["teams"]["home"]["team"]["id"] == team_id else game["teams"]["home"]["team"]
+                        game_date = game["gameDate"]
+                        venue = game["venue"]["name"]
+                        home_team = game["teams"]["home"]["team"]["name"]
+                        away_team = game["teams"]["away"]["team"]["name"]
+                        st.markdown(f"**{away_team} @ {home_team}** — {game_date[:10]} at {venue}")
         else:
-            for day in games[:5]:
-                for game in day["games"]:
-                    opponent = game["teams"]["away"]["team"] if game["teams"]["home"]["team"]["id"] == team_id else game["teams"]["home"]["team"]
-                    game_date = game["gameDate"]
-                    venue = game["venue"]["name"]
-                    home_team = game["teams"]["home"]["team"]["name"]
-                    away_team = game["teams"]["away"]["team"]["name"]
-                    st.markdown(f"**{away_team} @ {home_team}** — {game_date[:10]} at {venue}")
+            st.error("Team ID not found for schedule lookup.")
     else:
-        st.error("Team ID not found for schedule lookup.")
-
+        st.info("Schedule not available for league-wide selections like AL or NL.")
 # === Footer ===
 st.markdown("---")
 version = "v3.2 - News & Schedule Integration"
