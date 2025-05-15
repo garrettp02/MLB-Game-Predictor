@@ -247,11 +247,11 @@ if page == "Daily Matchups":
                     else:
                         st.info(f"No Twitter handle found for {team_abbr}.")
 
-            embed_team_tweet(selected_matchup["Home"])
-            embed_team_tweet(selected_matchup["Away"])
+                        embed_team_tweet(selected_matchup["Home"])
+                        embed_team_tweet(selected_matchup["Away"])
 
-            display_team_news(selected_matchup["Home"])
-            display_team_news(selected_matchup["Away"])
+                        display_team_news(selected_matchup["Home"])
+                        display_team_news(selected_matchup["Away"])
 
 
 # === Live News Feeds ===
