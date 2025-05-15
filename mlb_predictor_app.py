@@ -182,7 +182,18 @@ if page == "Daily Matchups":
     def fetch_team_stats_mlbid():
         url = "https://statsapi.mlb.com/api/v1/teams/statistics?season=2024&group=hitting,pitching"
         res = requests.get(url)
+        res = requests.get(url)
+        if res.status_code != 200:
+            st.error(f"MLB API request failed with status code {res.status_code}")
+            return {}
+
         data = res.json()
+        if "stats" not in data:
+            st.error("MLB API response did not contain 'stats' key.")
+            return {}
+
+for team_entry in data["stats"]:
+
 
         team_stats = {}
 
