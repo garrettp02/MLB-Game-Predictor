@@ -125,7 +125,7 @@ elif page == "Batch Predictions":
         result_df = pd.DataFrame(results)
         st.dataframe(result_df)
 
-# === Daily Matchups ===
+
 # === Daily Matchups ===
 if page == "Daily Matchups":
     st.title("📅 Today's MLB Matchups & Predictions")
@@ -166,6 +166,8 @@ if page == "Daily Matchups":
                     "Home": home_team,
                     "Predicted Winner": predicted,
                     "Confidence": round(margin, 3)
+                    f"{home_team} Win %": round(selected.get(home_id, 0) * 100, 1),
+                    f"{away_team} Win %": round(selected.get(away_id, 0) * 100, 1)
                 })
 
         st.dataframe(pd.DataFrame(matchups))
