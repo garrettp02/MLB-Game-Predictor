@@ -1,13 +1,24 @@
 import pandas as pd
 import streamlit as st
 import joblib
-import requests
-from bs4 import BeautifulSoup
+import feedparser
 
 # === Load model and mappings ===
 clf = joblib.load("xgb_model.pkl")
 team_map = joblib.load("team_map.pkl")
 reverse_map = joblib.load("reverse_map.pkl")
+
+# === Team logos map (URLs from ESPN or sportslogos.net) ===
+team_logos = {
+    "NYY": "https://a.espncdn.com/i/teamlogos/mlb/500/nyy.png",
+    "BOS": "https://a.espncdn.com/i/teamlogos/mlb/500/bos.png",
+    "LAD": "https://a.espncdn.com/i/teamlogos/mlb/500/lad.png",
+    "SF": "https://a.espncdn.com/i/teamlogos/mlb/500/sf.png",
+    "HOU": "https://a.espncdn.com/i/teamlogos/mlb/500/hou.png",
+    "CHC": "https://a.espncdn.com/i/teamlogos/mlb/500/chc.png",
+    "ATL": "https://a.espncdn.com/i/teamlogos/mlb/500/atl.png",
+    # Add more as needed...
+}
 
 # === Sidebar Navigation ===
 st.sidebar.title("MLB Predictor Navigation")
@@ -47,7 +58,7 @@ if page == "Single Game Prediction":
                 predicted_winner = reverse_map[winner_id]
                 prob_margin = abs(selected[home_id] - selected[away_id])
                 st.success(f"🏆 Predicted Winner: {predicted_winner}")
-                st.caption(f"📊 Confidence margin: {prob_margin:.2f}")
+                st.caption(f"📊 Confidence margin: {prob_margin:.2%}")
 
 # === Batch Predictions ===
 elif page == "Batch Predictions":
@@ -80,27 +91,31 @@ elif page == "Batch Predictions":
 
 # === Live News Feeds ===
 elif page == "Team News Feeds":
-    st.title("📰 MLB Team News Feeds")
-    selected_team = st.selectbox("Choose a team to fetch recent news:", sorted(team_map.keys()))
+    st.title("📰 MLB Team News Feed")
+    selected_team = st.selectbox("Choose a team:", sorted(team_map.keys()))
 
-    query = f"{selected_team} MLB news site:espn.com"
-    url = f"https://www.google.com/search?q={query.replace(' ', '+')}"
-    headers = {"User-Agent": "Mozilla/5.0"}
+    if selected_team in team_logos:
+        st.image(team_logos[selected_team], width=150)
 
-    try:
-        res = requests.get(url, headers=headers)
-        soup = BeautifulSoup(res.text, "html.parser")
-        headlines = soup.select("h3")[:5]
+    # ESPN MLB RSS feed
+    feed_url = "https://www.espn.com/espn/rss/mlb/news"
+    feed = feedparser.parse(feed_url)
 
-        st.subheader(f"Top News for {selected_team}")
-        for h in headlines:
-            st.markdown(f"- {h.text}")
-    except Exception as e:
-        st.error(f"Error fetching news: {e}")
+    st.subheader(f"Top news mentioning {selected_team}")
+
+    found = False
+    for entry in feed.entries[:20]:
+        if selected_team.lower() in entry.title.lower() or selected_team.lower() in entry.summary.lower():
+            st.markdown(f"**[{entry.title}]({entry.link})**")
+            st.caption(entry.published)
+            found = True
+
+    if not found:
+        st.info(f"No recent ESPN news found for {selected_team}")
 
 # === Footer ===
 st.markdown("---")
-version = "v2.0 - Full Dashboard Upgrade"
+version = "v2.1 - Dashboard + News with Logos"
 last_updated = "2025-05-14"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
 
