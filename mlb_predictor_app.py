@@ -20,7 +20,7 @@ team_logos = {
     "CIN": "https://a.espncdn.com/i/teamlogos/mlb/500/cin.png",
     "CLE": "https://a.espncdn.com/i/teamlogos/mlb/500/cle.png",
     "COL": "https://a.espncdn.com/i/teamlogos/mlb/500/col.png",
-    "CWS": "https://a.espncdn.com/i/teamlogos/mlb/500/chw.png",
+    "CHW": "https://a.espncdn.com/i/teamlogos/mlb/500/chw.png",
     "DET": "https://a.espncdn.com/i/teamlogos/mlb/500/det.png",
     "HOU": "https://a.espncdn.com/i/teamlogos/mlb/500/hou.png",
     "KC":  "https://a.espncdn.com/i/teamlogos/mlb/500/kc.png",
@@ -46,7 +46,7 @@ team_logos = {
 
 mlb_team_ids = {
     "ARI": 109, "ATL": 144, "BAL": 110, "BOS": 111, "CHC": 112,
-    "CIN": 113, "CLE": 114, "COL": 115, "CWS": 145, "DET": 116,
+    "CIN": 113, "CLE": 114, "COL": 115, "CHW": 145, "DET": 116,
     "HOU": 117, "KC": 118, "LAA": 108, "LAD": 119, "MIA": 146,
     "MIL": 158, "MIN": 142, "NYM": 121, "NYY": 147, "OAK": 133,
     "PHI": 143, "PIT": 134, "SD": 135, "SEA": 136, "SF": 137,
@@ -139,7 +139,7 @@ elif page == "Team News Feeds":
     team_name_map = {
         "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
         "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
-        "CWS": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
+        "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
         "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
         "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
         "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
