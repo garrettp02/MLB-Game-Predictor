@@ -38,25 +38,29 @@ X = df[["home_id", "away_id"]]
 y = df["winner_id"]
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
-# === Train both models ===
-rf_clf = RandomForestClassifier(n_estimators=200, max_depth=10, class_weight='balanced', random_state=42)
-rf_clf.fit(X_train, y_train)
-rf_preds = rf_clf.predict(X_test)
+# === Cache model training ===
+@st.cache_resource
+def train_models(X_train, y_train, X_test, y_test):
+    rf_clf = RandomForestClassifier(n_estimators=200, max_depth=10, class_weight='balanced', random_state=42)
+    rf_clf.fit(X_train, y_train)
+    rf_preds = rf_clf.predict(X_test)
 
-xgb_clf = XGBClassifier(n_estimators=200, max_depth=6, learning_rate=0.1, use_label_encoder=False, eval_metric='mlogloss', verbosity=0)
-xgb_clf.fit(X_train, y_train)
-xgb_preds = xgb_clf.predict(X_test)
+    xgb_clf = XGBClassifier(n_estimators=200, max_depth=6, learning_rate=0.1, use_label_encoder=False, eval_metric='mlogloss', verbosity=0)
+    xgb_clf.fit(X_train, y_train)
+    xgb_preds = xgb_clf.predict(X_test)
 
-# === Print performance in console ===
-print("📊 Random Forest:")
-print(classification_report(y_test, rf_preds, zero_division=0))
-print("Accuracy:", accuracy_score(y_test, rf_preds))
+    print("📊 Random Forest:")
+    print(classification_report(y_test, rf_preds, zero_division=0))
+    print("Accuracy:", accuracy_score(y_test, rf_preds))
 
-print("\n📊 XGBoost:")
-print(classification_report(y_test, xgb_preds, zero_division=0))
-print("Accuracy:", accuracy_score(y_test, xgb_preds))
+    print("\n📊 XGBoost:")
+    print(classification_report(y_test, xgb_preds, zero_division=0))
+    print("Accuracy:", accuracy_score(y_test, xgb_preds))
 
-# === Use XGBoost for live predictions ===
+    return rf_clf, xgb_clf
+
+# Train models and use XGBoost for predictions
+rf_clf, xgb_clf = train_models(X_train, y_train, X_test, y_test)
 clf = xgb_clf
 
 # === Streamlit UI ===
@@ -94,9 +98,9 @@ if st.button("Predict Winner"):
             st.success(f"🏆 Predicted Winner: {predicted_winner}")
             st.caption(f"📊 Confidence margin: {prob_margin:.2f}")
 
-import datetime
-version = "v1.1 - XGBoost upgrade"
+# === App version tag ===
+version = "v1.1 - XGBoost upgrade (cached)"
 last_updated = "2025-05-14"
-
 st.markdown("---")
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
+
