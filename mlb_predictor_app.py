@@ -1,70 +1,14 @@
 import pandas as pd
 import streamlit as st
-from xgboost import XGBClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, accuracy_score
+import joblib
 
-# === Load the dataset ===
-file_path = "games.csv"
-df = pd.read_csv(file_path)
-
-# === Clean and prepare data ===
-df = df.dropna(subset=["home", "away", "home-score", "away-score"])
-
-# Create winner column
-def determine_winner(row):
-    if row["home-score"] > row["away-score"]:
-        return row["home"]
-    elif row["home-score"] < row["away-score"]:
-        return row["away"]
-    else:
-        return "TIE"
-
-df["winner"] = df.apply(determine_winner, axis=1)
-df = df[df["winner"] != "TIE"]
-
-# Encode team names
-teams = pd.unique(df[["home", "away"]].values.ravel())
-team_map = {team: i for i, team in enumerate(teams)}
-reverse_map = {v: k for k, v in team_map.items()}
-
-df["home_id"] = df["home"].map(team_map)
-df["away_id"] = df["away"].map(team_map)
-df["winner_id"] = df["winner"].map(team_map)
-
-# Train/test split
-X = df[["home_id", "away_id"]]
-y = df["winner_id"]
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-
-# === Cache model training ===
-@st.cache_resource
-def train_models(X_train, y_train, X_test, y_test):
-    rf_clf = RandomForestClassifier(n_estimators=200, max_depth=10, class_weight='balanced', random_state=42)
-    rf_clf.fit(X_train, y_train)
-    rf_preds = rf_clf.predict(X_test)
-
-    xgb_clf = XGBClassifier(n_estimators=200, max_depth=6, learning_rate=0.1, use_label_encoder=False, eval_metric='mlogloss', verbosity=0)
-    xgb_clf.fit(X_train, y_train)
-    xgb_preds = xgb_clf.predict(X_test)
-
-    print("📊 Random Forest:")
-    print(classification_report(y_test, rf_preds, zero_division=0))
-    print("Accuracy:", accuracy_score(y_test, rf_preds))
-
-    print("\n📊 XGBoost:")
-    print(classification_report(y_test, xgb_preds, zero_division=0))
-    print("Accuracy:", accuracy_score(y_test, xgb_preds))
-
-    return rf_clf, xgb_clf
-
-# Train models and use XGBoost for predictions
-rf_clf, xgb_clf = train_models(X_train, y_train, X_test, y_test)
-clf = xgb_clf
+# === Load saved model and mappings ===
+clf = joblib.load("xgb_model.pkl")
+team_map = joblib.load("team_map.pkl")
+reverse_map = joblib.load("reverse_map.pkl")
 
 # === Streamlit UI ===
-st.title("⚾ MLB Game Winner Predictor (XGBoost Model)")
+st.title("⚾ MLB Game Winner Predictor (XGBoost Model - Pretrained)")
 st.write("Select two teams to predict the winner based on historical data.")
 
 home_team = st.selectbox("Home Team", sorted(team_map.keys()))
@@ -97,6 +41,9 @@ if st.button("Predict Winner"):
             prob_margin = abs(selected[home_id] - selected[away_id])
             st.success(f"🏆 Predicted Winner: {predicted_winner}")
             st.caption(f"📊 Confidence margin: {prob_margin:.2f}")
+
+
+
 
 # === App version tag ===
 version = "v1.1 - XGBoost upgrade (cached)"
