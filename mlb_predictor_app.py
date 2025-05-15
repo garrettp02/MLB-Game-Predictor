@@ -265,10 +265,53 @@ if page == "Daily Matchups":
 
             display_team_news(selected_matchup["Away"])
             display_top_reddit_post(selected_matchup["Away"])
+# === Live News Feeds ===
+elif page == "Team News Feeds":
+    st.title("📰 MLB Team News Feed")
+    selected_team = st.selectbox("Choose a team:", sorted(team_map.keys()))
+
+
+
+
+
+    if selected_team in team_logos:
+        st.image(team_logos[selected_team], width=150)
+
+    st.subheader(f"Latest news about {selected_team}")
+
+    team_name_map = {
+        "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
+        "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
+        "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
+        "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
+        "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
+        "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
+        "SF": "giants", "STL": "cardinals", "TB": "rays", "TEX": "rangers",
+        "TOR": "bluejays", "WSH": "nationals"
+    }
+
+    team_name = team_name_map.get(selected_team, selected_team.lower())
+    feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
+
+    feed = feedparser.parse(feed_url)
+    if not feed.entries:
+        st.warning("No recent news found or feed unavailable.")
+    else:
+        for entry in feed.entries[:3]:
+            st.markdown(f"**[{entry.title}]({entry.link})**")
+            if hasattr(entry, "summary"):
+                st.write(entry.summary)
+            if hasattr(entry, "media_content"):
+                for media in entry.media_content:
+                    if media.get("medium") == "image" and "url" in media:
+                        st.image(media["url"], width=250)
+            st.caption(entry.published)
+            st.markdown("---")
+
     # === Show upcoming games ===
-    if selected_team in mlb_team_ids:
-        st.subheader("📅 Upcoming Schedule")
-        team_id = mlb_team_ids.get(selected_team)
+    st.subheader("📅 Upcoming Schedule")
+    team_id = mlb_team_ids.get(selected_team)
+    if team_id:
         today = datetime.date.today()
         end = today + datetime.timedelta(days=14)
         url = f"https://statsapi.mlb.com/api/v1/schedule?teamId={team_id}&sportId=1&startDate={today}&endDate={end}"
@@ -288,7 +331,7 @@ if page == "Daily Matchups":
                     away_team = game["teams"]["away"]["team"]["name"]
                     st.markdown(f"**{away_team} @ {home_team}** — {game_date[:10]} at {venue}")
     else:
-        st.info("Schedule not available for league-wide selections.")
+        st.error("Team ID not found for schedule lookup.")
 
 # === Footer ===
 st.markdown("---")
