@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 
 # === Load the dataset ===
-file_path = "/Users/garrettparr/Com Sci C++ Home/MLB Decision Tree/games.csv"
+file_path = "games.csv"
 df = pd.read_csv(file_path)
 
 # === Clean and prepare data ===
