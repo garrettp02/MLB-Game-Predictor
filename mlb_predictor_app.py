@@ -52,6 +52,7 @@ mlb_team_ids = {
     "PHI": 143, "PIT": 134, "SD": 135, "SEA": 136, "SF": 137,
     "STL": 138, "TB": 139, "TEX": 140, "TOR": 141, "WSH": 120
 }
+id_to_abbr = {v: k for k, v in mlb_team_ids.items()}
 
 filtered_team_keys = [key for key in sorted(team_map.keys()) if key not in ("AL", "NL")]
 
@@ -125,6 +126,7 @@ elif page == "Batch Predictions":
         st.dataframe(result_df)
 
 # === Daily Matchups ===
+# === Daily Matchups ===
 if page == "Daily Matchups":
     st.title("📅 Today's MLB Matchups & Predictions")
     today = datetime.date.today()
@@ -138,8 +140,10 @@ if page == "Daily Matchups":
     else:
         matchups = []
         for game in games[0]["games"]:
-            home_team = game["teams"]["home"]["team"]["abbreviation"]
-            away_team = game["teams"]["away"]["team"]["abbreviation"]
+            home_id_raw = game["teams"]["home"]["team"]["id"]
+            away_id_raw = game["teams"]["away"]["team"]["id"]
+            home_team = id_to_abbr.get(home_id_raw)
+            away_team = id_to_abbr.get(away_id_raw)
 
             if home_team in team_map and away_team in team_map:
                 home_id = team_map[home_team]
