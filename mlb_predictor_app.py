@@ -172,7 +172,7 @@ elif page == "Batch Predictions":
 # === Daily Matchups ===
 
 if page == "Daily Matchups":
-    st.title("Today's MLB Matchups & Predictions")
+    st.title("📅 Today's MLB Matchups & Predictions")
     today = datetime.date.today()
     url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={today}"
     response = requests.get(url)
@@ -182,7 +182,7 @@ if page == "Daily Matchups":
     def fetch_team_stats_mlbid():
         url = "https://statsapi.mlb.com/api/v1/teams/statistics?season=2024&group=hitting,pitching"
         res = requests.get(url)
-        res = requests.get(url)
+
         if res.status_code != 200:
             st.error(f"MLB API request failed with status code {res.status_code}")
             return {}
@@ -191,9 +191,6 @@ if page == "Daily Matchups":
         if "stats" not in data:
             st.error("MLB API response did not contain 'stats' key.")
             return {}
-
-for team_entry in data["stats"]:
-
 
         team_stats = {}
 
@@ -251,7 +248,7 @@ for team_entry in data["stats"]:
             subreddit = team_subreddits[team_abbr]
             feed_url = f"https://www.reddit.com/r/{subreddit}/.rss"
             feed = feedparser.parse(feed_url)
-            st.subheader(f"\ud83d\udce3 Reddit - Top Post from r/{subreddit}")
+            st.subheader(f"📣 Reddit - Top Post from r/{subreddit}")
 
             for entry in feed.entries:
                 if 'Game Thread' in entry.title or 'Post Game Thread' in entry.title or 'Pre Game Thread' in entry.title:
@@ -267,6 +264,31 @@ for team_entry in data["stats"]:
                 st.info("No recent Reddit posts found.")
         else:
             st.info(f"No subreddit found for {team_abbr}.")
+
+    def display_team_news(team_abbr):
+        team_name_map = {
+            "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
+            "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
+            "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
+            "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
+            "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
+            "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
+            "SF": "giants", "STL": "cardinals", "TB": "rays", "TEX": "rangers",
+            "TOR": "bluejays", "WSH": "nationals"
+        }
+        team_name = team_name_map.get(team_abbr, team_abbr.lower())
+        feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
+        feed = feedparser.parse(feed_url)
+        st.subheader(f"🗞️ News for {team_abbr}")
+        if not feed.entries:
+            st.warning("No recent news found or feed unavailable.")
+        else:
+            for entry in feed.entries[:3]:
+                st.markdown(f"**[{entry.title}]({entry.link})**")
+                if hasattr(entry, "summary"):
+                    st.write(entry.summary)
+                st.caption(entry.published)
+                st.markdown("---")
 
     if not games:
         st.info("No games scheduled for today.")
@@ -340,37 +362,11 @@ for team_entry in data["stats"]:
             st.write(f"**Away Win Probability:** {selected_matchup['Away Win %']}%")
             st.write(f"**Confidence Margin:** {selected_matchup['Confidence']}")
 
-            def display_team_news(team_abbr):
-                team_name_map = {
-                    "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
-                    "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
-                    "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
-                    "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
-                    "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
-                    "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
-                    "SF": "giants", "STL": "cardinals", "TB": "rays", "TEX": "rangers",
-                    "TOR": "bluejays", "WSH": "nationals"
-                }
-                team_name = team_name_map.get(team_abbr, team_abbr.lower())
-                feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
-                feed = feedparser.parse(feed_url)
-                st.subheader(f"\ud83d\uddf0\ufe0f News for {team_abbr}")
-                if not feed.entries:
-                    st.warning("No recent news found or feed unavailable.")
-                else:
-                    for entry in feed.entries[:3]:
-                        st.markdown(f"**[{entry.title}]({entry.link})**")
-                        if hasattr(entry, "summary"):
-                            st.write(entry.summary)
-                        st.caption(entry.published)
-                        st.markdown("---")
-
             display_team_news(selected_matchup["Home"])
             display_top_reddit_post(selected_matchup["Home"])
 
             display_team_news(selected_matchup["Away"])
             display_top_reddit_post(selected_matchup["Away"])
-
 
 # === Live News Feeds ===
 elif page == "Team News Feeds":
