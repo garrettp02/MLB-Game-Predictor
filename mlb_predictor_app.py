@@ -67,25 +67,38 @@ page = st.sidebar.radio("Go to", ["Single Game Prediction", "Batch Predictions",
 # === Single Game Prediction ===
 if page == "Single Game Prediction":
     st.title("⚾ MLB Game Winner Predictor (XGBoost Model - Pretrained)")
-    st.write("Select two teams to predict the winner based on historical data and team performance inputs.")
+    st.write("Select two teams to predict the winner based on historical matchup patterns.")
 
     home_team = st.selectbox("Home Team", filtered_team_keys)
     away_team = st.selectbox("Away Team", filtered_team_keys)
 
-    st.markdown("#### 📈 Team Statistics Inputs")
-    col1, col2 = st.columns(2)
+    customize = st.checkbox("🔧 Customize game stats with sliders?")
 
-    with col1:
-        home_win_pct = st.slider("Home Win %", 0.0, 1.0, 0.55)
-        walks_home = st.slider("Walks Issued (Home)", 0.0, 10.0, 3.1)
-        k_home = st.slider("Strikeouts Thrown (Home)", 0.0, 15.0, 8.9)
-        tb_home = st.slider("Total Bases (Home)", 0.0, 20.0, 12.3)
+    if customize:
+        st.markdown("#### 📈 Adjust Team Performance Inputs")
+        col1, col2 = st.columns(2)
 
-    with col2:
-        away_win_pct = st.slider("Away Win %", 0.0, 1.0, 0.48)
-        walks_away = st.slider("Walks Issued (Away)", 0.0, 10.0, 2.8)
-        k_away = st.slider("Strikeouts Thrown (Away)", 0.0, 15.0, 9.1)
-        tb_away = st.slider("Total Bases (Away)", 0.0, 20.0, 11.5)
+        with col1:
+            home_win_pct = st.slider("Home Win %", 0.0, 1.0, 0.55)
+            walks_home = st.slider("Walks Issued (Home)", 0.0, 10.0, 3.1)
+            k_home = st.slider("Strikeouts Thrown (Home)", 0.0, 15.0, 8.9)
+            tb_home = st.slider("Total Bases (Home)", 0.0, 20.0, 12.3)
+
+        with col2:
+            away_win_pct = st.slider("Away Win %", 0.0, 1.0, 0.48)
+            walks_away = st.slider("Walks Issued (Away)", 0.0, 10.0, 2.8)
+            k_away = st.slider("Strikeouts Thrown (Away)", 0.0, 15.0, 9.1)
+            tb_away = st.slider("Total Bases (Away)", 0.0, 20.0, 11.5)
+    else:
+        # Default average stats
+        home_win_pct = 0.55
+        away_win_pct = 0.48
+        walks_home = 3.1
+        walks_away = 2.8
+        k_home = 8.9
+        k_away = 9.1
+        tb_home = 12.3
+        tb_away = 11.5
 
     if st.button("Predict Winner"):
         if home_team not in team_map or away_team not in team_map:
@@ -111,11 +124,7 @@ if page == "Single Game Prediction":
             probs = clf.predict_proba(input_df)[0]
             class_ids = clf.classes_.tolist()
 
-            selected = {}
-            for team_id in [home_id, away_id]:
-                if team_id in class_ids:
-                    selected[team_id] = probs[class_ids.index(team_id)]
-
+            selected = {tid: probs[class_ids.index(tid)] for tid in [home_id, away_id] if tid in class_ids}
             if not selected:
                 st.error("Neither team is in training data.")
             elif len(selected) == 1:
@@ -127,6 +136,7 @@ if page == "Single Game Prediction":
                 prob_margin = abs(selected[home_id] - selected[away_id])
                 st.success(f"🏆 Predicted Winner: {predicted_winner}")
                 st.caption(f"📊 Confidence margin: {prob_margin:.2%}")
+
 
 # === Batch Predictions ===
 elif page == "Batch Predictions":
