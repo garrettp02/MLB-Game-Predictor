@@ -39,7 +39,7 @@ team_logos = {
     "TB":  "https://a.espncdn.com/i/teamlogos/mlb/500/tb.png",
     "TEX": "https://a.espncdn.com/i/teamlogos/mlb/500/tex.png",
     "TOR": "https://a.espncdn.com/i/teamlogos/mlb/500/tor.png",
-    "WSH": "https://a.espncdn.com/i/teamlogos/mlb/500/wsh.png
+    "WSH": "https://a.espncdn.com/i/teamlogos/mlb/500/wsh.png"
 }
 
 # === Sidebar Navigation ===
