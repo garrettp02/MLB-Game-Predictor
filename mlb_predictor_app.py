@@ -2,6 +2,8 @@ import pandas as pd
 import streamlit as st
 import joblib
 import feedparser
+import requests
+import datetime
 
 # === Load model and mappings ===
 clf = joblib.load("xgb_model.pkl")
@@ -42,6 +44,14 @@ team_logos = {
     "WSH": "https://a.espncdn.com/i/teamlogos/mlb/500/wsh.png"
 }
 
+mlb_team_ids = {
+    "ARI": 109, "ATL": 144, "BAL": 110, "BOS": 111, "CHC": 112,
+    "CIN": 113, "CLE": 114, "COL": 115, "CWS": 145, "DET": 116,
+    "HOU": 117, "KC": 118, "LAA": 108, "LAD": 119, "MIA": 146,
+    "MIL": 158, "MIN": 142, "NYM": 121, "NYY": 147, "OAK": 133,
+    "PHI": 143, "PIT": 134, "SD": 135, "SEA": 136, "SF": 137,
+    "STL": 138, "TB": 139, "TEX": 140, "TOR": 141, "WSH": 120
+}
 
 st.sidebar.title("MLB Predictor Navigation")
 page = st.sidebar.radio("Go to", ["Single Game Prediction", "Batch Predictions", "Team News Feeds"])
@@ -149,6 +159,28 @@ elif page == "Team News Feeds":
                         st.image(media["url"], width=250)
             st.caption(entry.published)
             st.markdown("---")
+   
+# === Show upcoming games ===
+st.subheader("📅 Upcoming Schedule")
+team_id = mlb_team_ids[selected_team]
+today = datetime.date.today()
+end = today + datetime.timedelta(days=14)
+url = f"https://statsapi.mlb.com/api/v1/schedule?teamId={team_id}&sportId=1&startDate={today}&endDate={end}"
+response = requests.get(url)
+data = response.json()
+
+games = data.get("dates", [])
+if not games:
+    st.info("No upcoming games found.")
+else:
+    for day in games[:5]:
+        for game in day["games"]:
+            opponent = game["teams"]["away"]["team"] if game["teams"]["home"]["team"]["id"] == team_id else game["teams"]["home"]["team"]
+            game_date = game["gameDate"]
+            venue = game["venue"]["name"]
+            home_team = game["teams"]["home"]["team"]["name"]
+            away_team = game["teams"]["away"]["team"]["name"]
+            st.markdown(f"**{away_team} @ {home_team}** — {game_date[:10]} at {venue}")
 
 # === Footer ===
 st.markdown("---")
