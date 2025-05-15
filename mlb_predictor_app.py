@@ -127,16 +127,28 @@ elif page == "Batch Predictions":
 # === Live News Feeds ===
 elif page == "Team News Feeds":
     st.title("📰 MLB Team News Feed")
-    selected_team = st.selectbox("Choose a team:", sorted(team_map.keys()))
 
+    team_display_names = {
+        **{k: f"{k} - {v}" for k, v in {
+            "ARI": "D-backs", "ATL": "Braves", "BAL": "Orioles", "BOS": "Red Sox",
+            "CHC": "Cubs", "CIN": "Reds", "CLE": "Guardians", "COL": "Rockies",
+            "CHW": "White Sox", "DET": "Tigers", "HOU": "Astros", "KC": "Royals",
+            "LAA": "Angels", "LAD": "Dodgers", "MIA": "Marlins", "MIL": "Brewers",
+            "MIN": "Twins", "NYM": "Mets", "NYY": "Yankees", "OAK": "Athletics",
+            "PHI": "Phillies", "PIT": "Pirates", "SD": "Padres", "SEA": "Mariners",
+            "SF": "Giants", "STL": "Cardinals", "TB": "Rays", "TEX": "Rangers",
+            "TOR": "Blue Jays", "WSH": "Nationals"
+        }.items()},
+        "AL": "American League", "NL": "National League"
+    }
 
-
-
+    selected_label = st.selectbox("Choose a team or league:", list(team_display_names.values()))
+    selected_team = next(k for k, v in team_display_names.items() if v == selected_label)
 
     if selected_team in team_logos:
         st.image(team_logos[selected_team], width=150)
 
-    st.subheader(f"Latest news about {selected_team}")
+    st.subheader(f"Latest news about {team_display_names[selected_team]}")
 
     team_name_map = {
         "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
@@ -149,8 +161,11 @@ elif page == "Team News Feeds":
         "TOR": "bluejays", "WSH": "nationals"
     }
 
-    team_name = team_name_map.get(selected_team, selected_team.lower())
-    feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
+    if selected_team in ("AL", "NL"):
+        feed_url = "https://www.espn.com/espn/rss/mlb/news"
+    else:
+        team_name = team_name_map.get(selected_team, selected_team.lower())
+        feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
 
     feed = feedparser.parse(feed_url)
     if not feed.entries:
@@ -168,9 +183,9 @@ elif page == "Team News Feeds":
             st.markdown("---")
 
     # === Show upcoming games ===
-    st.subheader("📅 Upcoming Schedule")
-    team_id = mlb_team_ids.get(selected_team)
-    if team_id:
+    if selected_team in mlb_team_ids:
+        st.subheader("📅 Upcoming Schedule")
+        team_id = mlb_team_ids.get(selected_team)
         today = datetime.date.today()
         end = today + datetime.timedelta(days=14)
         url = f"https://statsapi.mlb.com/api/v1/schedule?teamId={team_id}&sportId=1&startDate={today}&endDate={end}"
@@ -190,10 +205,11 @@ elif page == "Team News Feeds":
                     away_team = game["teams"]["away"]["team"]["name"]
                     st.markdown(f"**{away_team} @ {home_team}** — {game_date[:10]} at {venue}")
     else:
-        st.error("Team ID not found for schedule lookup.")
+        st.info("Schedule not available for league-wide selections.")
 
 # === Footer ===
 st.markdown("---")
 version = "v2.5 - News & Schedule Integration"
 last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
+
