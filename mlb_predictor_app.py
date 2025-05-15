@@ -1,3 +1,5 @@
+Newest With Sliders
+
 import pandas as pd
 import streamlit as st
 import joblib
@@ -5,8 +7,7 @@ import feedparser
 import requests
 import datetime
 import matplotlib.pyplot as plt
-import report
-import mlbstatsapi
+
 # === Load model and mappings ===
 clf = joblib.load("xgb_model_updated.pkl")
 team_map = joblib.load("team_map_updated.pkl")
@@ -178,59 +179,6 @@ if page == "Daily Matchups":
     response = requests.get(url)
     data = response.json()
 
-    import mlbstatsapi
-
-    @st.cache_data
-    def fetch_team_stats_mlbid():
-        mlb = mlbstatsapi.Mlb()
-        team_stats = {}
-
-        all_teams = mlb.get_teams(season=2024)
-        for team in all_teams:
-            abbr = team.get('abbreviation') or team.get('teamCode') or team.get('name')[:3].upper()
-            team_id = team['id']
-
-            try:
-                stats = mlb.get_team_stats(
-                    team_id,
-                    stats=['season'],
-                    groups=['hitting', 'pitching'],
-                    season=2024
-                )
-
-                pitching = stats['stats']['pitching']['season']
-                pitching_games = max(pitching.get('gamesPlayed', 1), 1)
-                walks = pitching.get('baseOnBalls', 3.0)
-                strikeouts = pitching.get('strikeOuts', 8.0)
-
-                hitting = stats['stats']['hitting']['season']
-                hitting_games = max(hitting.get('gamesPlayed', 1), 1)
-                total_bases = hitting.get('totalBases', 12.0)
-
-                wins = team.get('record', {}).get('wins', 0)
-                losses = team.get('record', {}).get('losses', 0)
-                win_pct = wins / (wins + losses) if (wins + losses) > 0 else 0.5
-
-                team_stats[abbr] = {
-                    "win_pct": round(win_pct, 3),
-                    "walks_issued": round(walks / pitching_games, 2),
-                    "strikeouts_thrown": round(strikeouts / pitching_games, 2),
-                    "total_bases": round(total_bases / hitting_games, 2)
-                }
-
-            except Exception as e:
-                st.warning(f"Failed to get stats for {abbr}: {e}")
-                team_stats[abbr] = {
-                    "win_pct": 0.5,
-                    "walks_issued": 3.0,
-                    "strikeouts_thrown": 8.0,
-                    "total_bases": 12.0
-                }
-
-        return team_stats
-
-    team_stats = fetch_team_stats_mlbid()
-
     id_to_abbr = {v: k for k, v in mlb_team_ids.items()}
     games = data.get("dates", [])
 
@@ -268,31 +216,6 @@ if page == "Daily Matchups":
         else:
             st.info(f"No subreddit found for {team_abbr}.")
 
-    def display_team_news(team_abbr):
-        team_name_map = {
-            "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
-            "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
-            "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
-            "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
-            "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
-            "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
-            "SF": "giants", "STL": "cardinals", "TB": "rays", "TEX": "rangers",
-            "TOR": "bluejays", "WSH": "nationals"
-        }
-        team_name = team_name_map.get(team_abbr, team_abbr.lower())
-        feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
-        feed = feedparser.parse(feed_url)
-        st.subheader(f"🗞️ News for {team_abbr}")
-        if not feed.entries:
-            st.warning("No recent news found or feed unavailable.")
-        else:
-            for entry in feed.entries[:3]:
-                st.markdown(f"**[{entry.title}]({entry.link})**")
-                if hasattr(entry, "summary"):
-                    st.write(entry.summary)
-                st.caption(entry.published)
-                st.markdown("---")
-
     if not games:
         st.info("No games scheduled for today.")
     else:
@@ -307,15 +230,13 @@ if page == "Daily Matchups":
                 home_id = team_map[home_team]
                 away_id = team_map[away_team]
 
-                stats_home = team_stats.get(home_team, {})
-                stats_away = team_stats.get(away_team, {})
-
+                # Average placeholder values used for new model
                 input_df = pd.DataFrame([[
                     home_id, away_id,
-                    stats_home.get("win_pct", 0.50), stats_away.get("win_pct", 0.50),
-                    stats_home.get("walks_issued", 3.0), stats_away.get("walks_issued", 3.0),
-                    stats_home.get("strikeouts_thrown", 8.0), stats_away.get("strikeouts_thrown", 8.0),
-                    stats_home.get("total_bases", 12.0), stats_away.get("total_bases", 12.0)
+                    0.50, 0.50,
+                    3.0, 3.0,
+                    8.0, 8.0,
+                    12.0, 12.0
                 ]], columns=[
                     "home_id", "away_id",
                     "home_win_pct", "away_win_pct",
@@ -364,6 +285,31 @@ if page == "Daily Matchups":
             st.write(f"**Home Win Probability:** {selected_matchup['Home Win %']}%")
             st.write(f"**Away Win Probability:** {selected_matchup['Away Win %']}%")
             st.write(f"**Confidence Margin:** {selected_matchup['Confidence']}")
+
+            def display_team_news(team_abbr):
+                team_name_map = {
+                    "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
+                    "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
+                    "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
+                    "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
+                    "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
+                    "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
+                    "SF": "giants", "STL": "cardinals", "TB": "rays", "TEX": "rangers",
+                    "TOR": "bluejays", "WSH": "nationals"
+                }
+                team_name = team_name_map.get(team_abbr, team_abbr.lower())
+                feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
+                feed = feedparser.parse(feed_url)
+                st.subheader(f"🗞️ News for {team_abbr}")
+                if not feed.entries:
+                    st.warning("No recent news found or feed unavailable.")
+                else:
+                    for entry in feed.entries[:3]:
+                        st.markdown(f"**[{entry.title}]({entry.link})**")
+                        if hasattr(entry, "summary"):
+                            st.write(entry.summary)
+                        st.caption(entry.published)
+                        st.markdown("---")
 
             display_team_news(selected_matchup["Home"])
             display_top_reddit_post(selected_matchup["Home"])
@@ -452,7 +398,7 @@ elif page == "Team News Feeds":
         st.info("Schedule not available for league-wide selections.")
 # === Footer ===
 st.markdown("---")
-version = "v4.5 - News & Schedule Integration"
+version = "v4.0 - News & Schedule Integration"
 last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
 
