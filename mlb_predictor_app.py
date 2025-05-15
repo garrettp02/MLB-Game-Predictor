@@ -141,17 +141,19 @@ elif page == "Batch Predictions":
 # === Daily Matchups ===
 
 if page == "Daily Matchups":
-    st.title("📅 Today's MLB Matchups")
-    view_mode = st.radio("View Mode", ["View All Matchups", "Detailed Matchup Viewer"])
-
+    st.title("📅 Today's MLB Matchups & Predictions")
     today = datetime.date.today()
     url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={today}"
     response = requests.get(url)
     data = response.json()
+
+    id_to_abbr = {v: k for k, v in mlb_team_ids.items()}
     games = data.get("dates", [])
 
-    matchups = []
-    if games:
+    if not games:
+        st.info("No games scheduled for today.")
+    else:
+        matchups = []
         for game in games[0]["games"]:
             home_id_raw = game["teams"]["home"]["team"]["id"]
             away_id_raw = game["teams"]["away"]["team"]["id"]
@@ -164,6 +166,7 @@ if page == "Daily Matchups":
                 input_df = pd.DataFrame([[home_id, away_id]], columns=["home_id", "away_id"])
                 probs = clf.predict_proba(input_df)[0]
                 class_ids = clf.classes_.tolist()
+
                 selected = {tid: probs[class_ids.index(tid)] for tid in [home_id, away_id] if tid in class_ids}
                 if selected:
                     winner_id = max(selected, key=selected.get)
@@ -182,13 +185,11 @@ if page == "Daily Matchups":
                     "Away Win %": round(selected.get(away_id, 0) * 100, 1)
                 })
 
-    if view_mode == "View All Matchups":
-        if not matchups:
-            st.info("No games scheduled for today.")
-        else:
-            df = pd.DataFrame(matchups)
-            st.dataframe(df)
+        view_mode = st.radio("View Mode", ["View All Matchups", "Detailed Matchup View"], horizontal=True)
 
+        if view_mode == "View All Matchups":
+            st.dataframe(pd.DataFrame(matchups))
+            df = pd.DataFrame(matchups)
             fig, ax = plt.subplots(figsize=(8, 5))
             ax.bar(df["Home"] + " vs " + df["Away"], df["Confidence"], color="skyblue")
             ax.set_ylabel("Confidence")
@@ -196,18 +197,27 @@ if page == "Daily Matchups":
             ax.set_xticklabels(df["Home"] + " vs " + df["Away"], rotation=45, ha='right')
             st.pyplot(fig)
 
-    elif view_mode == "Detailed Matchup Viewer":
-        if not matchups:
-            st.info("No games scheduled for today.")
-        else:
-            matchup_labels = [f"{m['Away']} @ {m['Home']}" for m in matchups]
-            selected_label = st.selectbox("Select a Matchup", matchup_labels)
-            selected_matchup = matchups[matchup_labels.index(selected_label)]
+        elif view_mode == "Detailed Matchup View":
+            selected_matchup = st.selectbox("Select a Matchup", matchups, format_func=lambda x: f"{x['Away']} @ {x['Home']}")
 
-            st.subheader(f"Prediction: {selected_matchup['Predicted Winner']}")
-            st.write(f"🔵 Home Win %: {selected_matchup['Home Win %']}%")
-            st.write(f"🔴 Away Win %: {selected_matchup['Away Win %']}%")
-            st.write(f"📊 Confidence: {selected_matchup['Confidence']}")
+            st.markdown(f"### Predicted Winner: **{selected_matchup['Predicted Winner']}**")
+            st.write(f"**Home Win Probability:** {selected_matchup['Home Win %']}%")
+            st.write(f"**Away Win Probability:** {selected_matchup['Away Win %']}%")
+            st.write(f"**Confidence Margin:** {selected_matchup['Confidence']}")
+
+            def embed_team_tweet(team_abbr):
+                if team_abbr in twitter_handles:
+                    handle = twitter_handles[team_abbr]
+                    tweet_html = f'''
+                        <blockquote class="twitter-tweet">
+                            <a href="https://twitter.com/{handle}"></a>
+                        </blockquote>
+                        <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+                    '''
+                    st.markdown(f"### 🐦 Latest Tweet from @{handle}", unsafe_allow_html=True)
+                    st.components.v1.html(tweet_html, height=300)
+                else:
+                    st.info(f"No Twitter handle found for {team_abbr}.")
 
             def display_team_news(team_abbr):
                 team_name_map = {
@@ -223,7 +233,7 @@ if page == "Daily Matchups":
                 team_name = team_name_map.get(team_abbr, team_abbr.lower())
                 feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
                 feed = feedparser.parse(feed_url)
-                st.subheader(f"📰 News for {team_abbr}")
+                st.subheader(f"🗞️ News for {team_abbr}")
                 if not feed.entries:
                     st.warning("No recent news found or feed unavailable.")
                 else:
@@ -233,26 +243,12 @@ if page == "Daily Matchups":
                             st.write(entry.summary)
                         st.caption(entry.published)
                         st.markdown("---")
-                def embed_team_tweet(team_abbr):
-                    if team_abbr in twitter_handles:
-                        handle = twitter_handles[team_abbr]
-                        tweet_html = f'''
-                            <blockquote class="twitter-tweet">
-                                <a href="https://twitter.com/{handle}"></a>
-                            </blockquote>
-                            <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-                        '''
-                        st.markdown(f"### 🐦 Latest Tweet from @{handle}", unsafe_allow_html=True)
-                        st.components.v1.html(tweet_html, height=300)
-                    else:
-                        st.info(f"No Twitter handle found for {team_abbr}.")
 
             embed_team_tweet(selected_matchup["Home"])
             embed_team_tweet(selected_matchup["Away"])
 
             display_team_news(selected_matchup["Home"])
             display_team_news(selected_matchup["Away"])
-
 
 # === Live News Feeds ===
 elif page == "Team News Feeds":
