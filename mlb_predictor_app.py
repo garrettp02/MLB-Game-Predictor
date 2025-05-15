@@ -128,18 +128,19 @@ elif page == "Batch Predictions":
 
 
 # === Daily Matchups ===
+
 if page == "Daily Matchups":
-    st.title("📅 Today's MLB Matchups & Predictions")
+    st.title("📅 Today's MLB Matchups")
+    view_mode = st.radio("View Mode", ["View All Matchups", "Detailed Matchup Viewer"])
+
     today = datetime.date.today()
     url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={today}"
     response = requests.get(url)
     data = response.json()
-
     games = data.get("dates", [])
-    if not games:
-        st.info("No games scheduled for today.")
-    else:
-        matchups = []
+
+    matchups = []
+    if games:
         for game in games[0]["games"]:
             home_id_raw = game["teams"]["home"]["team"]["id"]
             away_id_raw = game["teams"]["away"]["team"]["id"]
@@ -152,7 +153,6 @@ if page == "Daily Matchups":
                 input_df = pd.DataFrame([[home_id, away_id]], columns=["home_id", "away_id"])
                 probs = clf.predict_proba(input_df)[0]
                 class_ids = clf.classes_.tolist()
-
                 selected = {tid: probs[class_ids.index(tid)] for tid in [home_id, away_id] if tid in class_ids}
                 if selected:
                     winner_id = max(selected, key=selected.get)
@@ -171,7 +171,60 @@ if page == "Daily Matchups":
                     "Away Win %": round(selected.get(away_id, 0) * 100, 1)
                 })
 
-        st.dataframe(pd.DataFrame(matchups))
+    if view_mode == "View All Matchups":
+        if not matchups:
+            st.info("No games scheduled for today.")
+        else:
+            df = pd.DataFrame(matchups)
+            st.dataframe(df)
+
+            fig, ax = plt.subplots(figsize=(8, 5))
+            ax.bar(df["Home"] + " vs " + df["Away"], df["Confidence"], color="skyblue")
+            ax.set_ylabel("Confidence")
+            ax.set_title("Prediction Confidence for Today's Matchups")
+            ax.set_xticklabels(df["Home"] + " vs " + df["Away"], rotation=45, ha='right')
+            st.pyplot(fig)
+
+    elif view_mode == "Detailed Matchup Viewer":
+        if not matchups:
+            st.info("No games scheduled for today.")
+        else:
+            matchup_labels = [f"{m['Away']} @ {m['Home']}" for m in matchups]
+            selected_label = st.selectbox("Select a Matchup", matchup_labels)
+            selected_matchup = matchups[matchup_labels.index(selected_label)]
+
+            st.subheader(f"Prediction: {selected_matchup['Predicted Winner']}")
+            st.write(f"🔵 Home Win %: {selected_matchup['Home Win %']}%")
+            st.write(f"🔴 Away Win %: {selected_matchup['Away Win %']}%")
+            st.write(f"📊 Confidence: {selected_matchup['Confidence']}")
+
+            def display_team_news(team_abbr):
+                team_name_map = {
+                    "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
+                    "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
+                    "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
+                    "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
+                    "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
+                    "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
+                    "SF": "giants", "STL": "cardinals", "TB": "rays", "TEX": "rangers",
+                    "TOR": "bluejays", "WSH": "nationals"
+                }
+                team_name = team_name_map.get(team_abbr, team_abbr.lower())
+                feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
+                feed = feedparser.parse(feed_url)
+                st.subheader(f"📰 News for {team_abbr}")
+                if not feed.entries:
+                    st.warning("No recent news found or feed unavailable.")
+                else:
+                    for entry in feed.entries[:3]:
+                        st.markdown(f"**[{entry.title}]({entry.link})**")
+                        if hasattr(entry, "summary"):
+                            st.write(entry.summary)
+                        st.caption(entry.published)
+                        st.markdown("---")
+
+            display_team_news(selected_matchup["Home"])
+            display_team_news(selected_matchup["Away"])
 
 
 # === Live News Feeds ===
