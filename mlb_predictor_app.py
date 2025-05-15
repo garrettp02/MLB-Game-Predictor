@@ -4,6 +4,7 @@ import joblib
 import feedparser
 import requests
 import datetime
+import matplotlib.pyplot as plt
 
 # === Load model and mappings ===
 clf = joblib.load("xgb_model.pkl")
@@ -171,6 +172,19 @@ if page == "Daily Matchups":
                 })
 
         st.dataframe(pd.DataFrame(matchups))
+
+    
+
+df = pd.DataFrame(matchups)
+
+fig, ax = plt.subplots(figsize=(8, 5))
+ax.bar(df["Home"] + " vs " + df["Away"], df["Confidence"], color="skyblue")
+ax.set_ylabel("Confidence")
+ax.set_title("Prediction Confidence for Today's Matchups")
+ax.set_xticklabels(df["Home"] + " vs " + df["Away"], rotation=45, ha='right')
+
+st.pyplot(fig)
+
 
 # === Live News Feeds ===
 elif page == "Team News Feeds":
