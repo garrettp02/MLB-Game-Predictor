@@ -53,6 +53,8 @@ mlb_team_ids = {
     "STL": 138, "TB": 139, "TEX": 140, "TOR": 141, "WSH": 120
 }
 
+filtered_team_keys = [key for key in sorted(team_map.keys()) if key not in ("AL", "NL")]
+
 st.sidebar.title("MLB Predictor Navigation")
 page = st.sidebar.radio("Go to", ["Single Game Prediction", "Batch Predictions", "Team News Feeds"])
 
