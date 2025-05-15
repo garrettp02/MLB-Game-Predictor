@@ -172,7 +172,7 @@ elif page == "Batch Predictions":
 # === Daily Matchups ===
 
 if page == "Daily Matchups":
-    st.title("\ud83d\uddd5\ufe0f Today's MLB Matchups & Predictions")
+    st.title("Today's MLB Matchups & Predictions")
     today = datetime.date.today()
     url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={today}"
     response = requests.get(url)
