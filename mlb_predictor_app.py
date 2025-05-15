@@ -45,16 +45,8 @@ team_logos = {
     "WSH": "https://a.espncdn.com/i/teamlogos/mlb/500/wsh.png"
 }
 
-twitter_handles = {
-    "ARI": "Dbacks", "ATL": "Braves", "BAL": "Orioles", "BOS": "RedSox",
-    "CHC": "Cubs", "CIN": "Reds", "CLE": "CleGuardians", "COL": "Rockies",
-    "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "Royals",
-    "LAA": "Angels", "LAD": "Dodgers", "MIA": "Marlins", "MIL": "Brewers",
-    "MIN": "Twins", "NYM": "Mets", "NYY": "Yankees", "OAK": "Athletics",
-    "PHI": "Phillies", "PIT": "Pirates", "SD": "Padres", "SEA": "Mariners",
-    "SF": "SFGiants", "STL": "Cardinals", "TB": "RaysBaseball", "TEX": "Rangers",
-    "TOR": "BlueJays", "WSH": "Nationals"
-}
+
+
 
 mlb_team_ids = {
     "ARI": 109, "ATL": 144, "BAL": 110, "BOS": 111, "CHC": 112,
@@ -150,6 +142,27 @@ if page == "Daily Matchups":
     id_to_abbr = {v: k for k, v in mlb_team_ids.items()}
     games = data.get("dates", [])
 
+    team_subreddits = {
+        "NYY": "NYYankees", "BOS": "RedSox", "LAD": "Dodgers", "CHC": "CHICubs",
+        "SF": "SFGiants", "ATL": "Braves", "NYM": "NewYorkMets", "PHI": "Phillies",
+        "SD": "Padres", "HOU": "Astros", "BAL": "Orioles", "SEA": "Mariners",
+        "STL": "Cardinals", "TOR": "Torontobluejays", "CIN": "Reds", "TEX": "TexasRangers",
+        "OAK": "OaklandAthletics", "WSH": "Nationals", "MIL": "Brewers",
+        "MIN": "MinnesotaTwins", "PIT": "Pirates", "CLE": "ClevelandGuardians",
+        "DET": "MotorCityKitties", "LAA": "AngelsBaseball", "MIA": "MiamiMarlins",
+        "KC": "Royals", "ARI": "AZDiamondbacks", "COL": "ColoradoRockies",
+        "TB": "TampaBayRays", "CWS": "whitesox"
+    }
+
+    def display_team_reddit(team_abbr):
+        if team_abbr in team_subreddits:
+            subreddit = team_subreddits[team_abbr]
+            url = f"https://www.reddit.com/r/{subreddit}"
+            st.subheader(f"📣 Reddit - r/{subreddit}")
+            st.markdown(f"[Visit r/{subreddit} →]({url})")
+        else:
+            st.info(f"No subreddit found for {team_abbr}.")
+
     if not games:
         st.info("No games scheduled for today.")
     else:
@@ -205,20 +218,6 @@ if page == "Daily Matchups":
             st.write(f"**Away Win Probability:** {selected_matchup['Away Win %']}%")
             st.write(f"**Confidence Margin:** {selected_matchup['Confidence']}")
 
-            def embed_team_tweet(team_abbr):
-                if team_abbr in twitter_handles:
-                    handle = twitter_handles[team_abbr]
-                    tweet_html = f'''
-                        <blockquote class="twitter-tweet">
-                            <a href="https://twitter.com/{handle}"></a>
-                        </blockquote>
-                        <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-                    '''
-                    st.markdown(f"### 🐦 Latest Tweet from @{handle}", unsafe_allow_html=True)
-                    st.components.v1.html(tweet_html, height=300)
-                else:
-                    st.info(f"No Twitter handle found for {team_abbr}.")
-
             def display_team_news(team_abbr):
                 team_name_map = {
                     "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
@@ -244,12 +243,11 @@ if page == "Daily Matchups":
                         st.caption(entry.published)
                         st.markdown("---")
 
-            embed_team_tweet(selected_matchup["Home"])
-            embed_team_tweet(selected_matchup["Away"])
-
             display_team_news(selected_matchup["Home"])
             display_team_news(selected_matchup["Away"])
 
+            display_team_reddit(selected_matchup["Home"])
+            display_team_reddit(selected_matchup["Away"])
 # === Live News Feeds ===
 elif page == "Team News Feeds":
     st.title("📰 MLB Team News Feed")
