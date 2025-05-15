@@ -141,10 +141,17 @@ elif page == "Team News Feeds":
     else:
         for entry in feed.entries[:10]:
             st.markdown(f"**[{entry.title}]({entry.link})**")
+            if hasattr(entry, "summary"):
+                st.write(entry.summary)
+            if hasattr(entry, "media_content"):
+                for media in entry.media_content:
+                    if media.get("medium") == "image" and "url" in media:
+                        st.image(media["url"], width=250)
             st.caption(entry.published)
+            st.markdown("---")
 
 # === Footer ===
 st.markdown("---")
-version = "v2.3 - MLB.com RSS Integration"
+version = "v2.4 - News Summaries and Thumbnails"
 last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
