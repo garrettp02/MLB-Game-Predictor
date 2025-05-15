@@ -8,7 +8,7 @@ clf = joblib.load("xgb_model.pkl")
 team_map = joblib.load("team_map.pkl")
 reverse_map = joblib.load("reverse_map.pkl")
 
-# === Team logos map (URLs from ESPN or sportslogos.net) ===
+# === Team logos map ===
 team_logos = {
     "ARI": "https://a.espncdn.com/i/teamlogos/mlb/500/ari.png",
     "ATL": "https://a.espncdn.com/i/teamlogos/mlb/500/atl.png",
@@ -42,7 +42,17 @@ team_logos = {
     "WSH": "https://a.espncdn.com/i/teamlogos/mlb/500/wsh.png"
 }
 
-# === Sidebar Navigation ===
+coldwire_slugs = {
+    "NYY": "new-york-yankees", "BOS": "boston-red-sox", "LAD": "los-angeles-dodgers", "SF": "san-francisco-giants",
+    "HOU": "houston-astros", "CHC": "chicago-cubs", "ATL": "atlanta-braves", "BAL": "baltimore-orioles",
+    "TEX": "texas-rangers", "PHI": "philadelphia-phillies", "ARI": "arizona-diamondbacks", "SEA": "seattle-mariners",
+    "TOR": "toronto-blue-jays", "MIN": "minnesota-twins", "MIA": "miami-marlins", "CIN": "cincinnati-reds",
+    "MIL": "milwaukee-brewers", "DET": "detroit-tigers", "CLE": "cleveland-guardians", "OAK": "oakland-athletics",
+    "SD": "san-diego-padres", "PIT": "pittsburgh-pirates", "NYM": "new-york-mets", "STL": "st-louis-cardinals",
+    "WSH": "washington-nationals", "CWS": "chicago-white-sox", "LAA": "los-angeles-angels", "COL": "colorado-rockies",
+    "KC": "kansas-city-royals", "TB": "tampa-bay-rays"
+}
+
 st.sidebar.title("MLB Predictor Navigation")
 page = st.sidebar.radio("Go to", ["Single Game Prediction", "Batch Predictions", "Team News Feeds"])
 
@@ -80,7 +90,7 @@ if page == "Single Game Prediction":
                 predicted_winner = reverse_map[winner_id]
                 prob_margin = abs(selected[home_id] - selected[away_id])
                 st.success(f"🏆 Predicted Winner: {predicted_winner}")
-                st.caption(f"📊 Confidence margin: {prob_margin:.2%}")
+                st.caption(f"📊 Confidence margin: {prob_margin:.2f}")
 
 # === Batch Predictions ===
 elif page == "Batch Predictions":
@@ -119,25 +129,30 @@ elif page == "Team News Feeds":
     if selected_team in team_logos:
         st.image(team_logos[selected_team], width=150)
 
-    # ESPN MLB RSS feed
-    feed_url = "https://www.espn.com/espn/rss/mlb/news"
+    st.subheader(f"Latest news about {selected_team}")
+
+    # Try ColdWire first
+    feed_url = None
+    slug = coldwire_slugs.get(selected_team)
+    if slug:
+        feed_url = f"https://mlbnewsnow.com/tag/{slug}/feed/"
+    else:
+        st.info("ColdWire feed not found. Using ESPN backup.")
+        feed_url = "https://www.espn.com/espn/rss/mlb/news"
+
     feed = feedparser.parse(feed_url)
-
-    st.subheader(f"Top news mentioning {selected_team}")
-
     found = False
-    for entry in feed.entries[:20]:
+    for entry in feed.entries[:10]:
         if selected_team.lower() in entry.title.lower() or selected_team.lower() in entry.summary.lower():
             st.markdown(f"**[{entry.title}]({entry.link})**")
             st.caption(entry.published)
             found = True
 
     if not found:
-        st.info(f"No recent ESPN news found for {selected_team}")
+        st.info(f"No recent news found for {selected_team}")
 
 # === Footer ===
 st.markdown("---")
-version = "v2.1 - Dashboard + News with Logos"
+version = "v2.2 - ColdWire News + Logos"
 last_updated = "2025-05-14"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
-
