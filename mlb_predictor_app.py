@@ -149,7 +149,7 @@ elif page == "Team News Feeds":
     if not feed.entries:
         st.warning("No recent news found or feed unavailable.")
     else:
-        for entry in feed.entries[:10]:
+        for entry in feed.entries[:3]:
             st.markdown(f"**[{entry.title}]({entry.link})**")
             if hasattr(entry, "summary"):
                 st.write(entry.summary)
