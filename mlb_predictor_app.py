@@ -187,7 +187,7 @@ if page == "Daily Matchups":
 
         all_teams = mlb.get_teams(season=2024)
         for team in all_teams:
-            abbr = team['abbreviation']
+            abbr = team.get('abbreviation') or team.get('teamCode') or team.get('name')[:3].upper()
             team_id = team['id']
 
             try:
