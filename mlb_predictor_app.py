@@ -127,7 +127,9 @@ elif page == "Batch Predictions":
 # === Live News Feeds ===
 elif page == "Team News Feeds":
     st.title("📰 MLB Team News Feed")
-    selected_team = st.selectbox("Choose a team:", sorted(team_map.keys()))
+    valid_teams = [k for k in sorted(team_name_map.keys()) if k in mlb_team_ids and k in team_map]
+    selected_team = st.selectbox("Choose a team:", valid_teams)
+
 
 
 
