@@ -269,36 +269,40 @@ if page == "Daily Matchups":
 elif page == "Team News Feeds":
     st.title("📰 MLB Team News Feed")
 
-    extended_team_list = sorted(team_map.keys()) + ["AL", "NL"]
-    selected_team = st.selectbox("Choose a team or league:", extended_team_list)
+    custom_team_list = ["American League", "National League"] + sorted(team_map.keys())
+    league_abbr_map = {
+        "American League": "AL",
+        "National League": "NL"
+    }
 
-    team_logos["AL"] = "https://upload.wikimedia.org/wikipedia/en/thumb/2/25/American_League_logo.svg/1200px-American_League_logo.svg.png"
-    team_logos["NL"] = "https://upload.wikimedia.org/wikipedia/en/thumb/e/ec/National_League.svg/1200px-National_League.svg.png"
+    selected_label = st.selectbox("Choose a team or league:", custom_team_list)
+    selected_team = league_abbr_map.get(selected_label, selected_label)
 
-    if selected_team in team_logos:
-        st.image(team_logos[selected_team], width=150)
-
-    st.subheader(f"Latest news about {selected_team}")
+    team_name_map = {
+        "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
+        "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
+        "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
+        "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
+        "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
+        "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
+        "SF": "giants", "STL": "cardinals", "TB": "rays", "TEX": "rangers",
+        "TOR": "bluejays", "WSH": "nationals"
+    }
 
     if selected_team == "AL":
-        feed_url = "https://www.espn.com/espn/rss/mlb/news"
+        st.subheader("📰 American League News (via ESPN)")
+        rss_url = "https://www.espn.com/espn/rss/mlb/news"
     elif selected_team == "NL":
-        feed_url = "https://www.espn.com/espn/rss/mlb/news"
+        st.subheader("📰 National League News (via ESPN)")
+        rss_url = "https://www.espn.com/espn/rss/mlb/news"
     else:
-        team_name_map = {
-            "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
-            "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
-            "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
-            "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
-            "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
-            "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
-            "SF": "giants", "STL": "cardinals", "TB": "rays", "TEX": "rangers",
-            "TOR": "bluejays", "WSH": "nationals"
-        }
         team_name = team_name_map.get(selected_team, selected_team.lower())
-        feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
+        rss_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
+        if selected_team in team_logos:
+            st.image(team_logos[selected_team], width=150)
+        st.subheader(f"Latest news about {selected_team}")
 
-    feed = feedparser.parse(feed_url)
+    feed = feedparser.parse(rss_url)
     if not feed.entries:
         st.warning("No recent news found or feed unavailable.")
     else:
@@ -339,7 +343,7 @@ elif page == "Team News Feeds":
         else:
             st.error("Team ID not found for schedule lookup.")
     else:
-        st.info("Schedule not available for league-wide selections like AL or NL.")
+        st.info("Schedule not available for league-wide selections.")
 # === Footer ===
 st.markdown("---")
 version = "v3.2 - News & Schedule Integration"
