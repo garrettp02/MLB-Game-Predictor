@@ -217,12 +217,14 @@ if page == "Daily Matchups":
             if home_team in team_map and away_team in team_map:
                 home_id = team_map[home_team]
                 away_id = team_map[away_team]
-               input_df = pd.DataFrame([[
-                     home_id, away_id,
-                    0.50, 0.50,           # home_win_pct, away_win_pct
-                    3.0, 3.0,             # Walks Issued - Home, Away
-                    8.0, 8.0,             # Strikeouts Thrown - Home, Away
-                    12.0, 12.0            # Total Bases - Home, Away
+
+                # Average placeholder values used for new model
+                input_df = pd.DataFrame([[
+                    home_id, away_id,
+                    0.50, 0.50,
+                    3.0, 3.0,
+                    8.0, 8.0,
+                    12.0, 12.0
                 ]], columns=[
                     "home_id", "away_id",
                     "home_win_pct", "away_win_pct",
@@ -231,7 +233,7 @@ if page == "Daily Matchups":
                     "Total Bases - Home", "Total Bases - Away"
                 ])
 
-probs = clf.predict_proba(input_df)[0]
+                probs = clf.predict_proba(input_df)[0]
                 class_ids = clf.classes_.tolist()
 
                 selected = {tid: probs[class_ids.index(tid)] for tid in [home_id, away_id] if tid in class_ids}
@@ -302,6 +304,7 @@ probs = clf.predict_proba(input_df)[0]
 
             display_team_news(selected_matchup["Away"])
             display_top_reddit_post(selected_matchup["Away"])
+
 # === Live News Feeds ===
 elif page == "Team News Feeds":
     st.title("📰 MLB Team News Feed")
