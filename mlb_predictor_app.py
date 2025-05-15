@@ -164,14 +164,12 @@ if page == "Daily Matchups":
             for entry in feed.entries:
                 if 'Game Thread' in entry.title or 'Post Game Thread' in entry.title or 'Pre Game Thread' in entry.title:
                     st.markdown(f"**[{entry.title}]({entry.link})**")
-                    if hasattr(entry, "summary"):
                     st.caption(entry.published)
                     return
 
             if feed.entries:
                 entry = feed.entries[0]
                 st.markdown(f"**[{entry.title}]({entry.link})**")
-                if hasattr(entry, "summary"):
                 st.caption(entry.published)
             else:
                 st.info("No recent Reddit posts found.")
