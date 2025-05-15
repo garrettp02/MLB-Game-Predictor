@@ -4,7 +4,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
 # === Load and prepare dataset ===
-file_path = "/Users/garrettparr/Com Sci C++ Home/MLB Decision Tree/games.csv"
+file_path = "games.csv"
+
 df = pd.read_csv(file_path)
 df = df.dropna(subset=["home", "away", "home-score", "away-score"])
 
