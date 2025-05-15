@@ -217,8 +217,21 @@ if page == "Daily Matchups":
             if home_team in team_map and away_team in team_map:
                 home_id = team_map[home_team]
                 away_id = team_map[away_team]
-                input_df = pd.DataFrame([[home_id, away_id]], columns=["home_id", "away_id"])
-                probs = clf.predict_proba(input_df)[0]
+               input_df = pd.DataFrame([[
+                     home_id, away_id,
+                    0.50, 0.50,           # home_win_pct, away_win_pct
+                    3.0, 3.0,             # Walks Issued - Home, Away
+                    8.0, 8.0,             # Strikeouts Thrown - Home, Away
+                    12.0, 12.0            # Total Bases - Home, Away
+                ]], columns=[
+                    "home_id", "away_id",
+                    "home_win_pct", "away_win_pct",
+                    "Walks Issued - Home", "Walks Issued - Away",
+                    "Strikeouts Thrown - Home", "Strikeouts Thrown - Away",
+                    "Total Bases - Home", "Total Bases - Away"
+                ])
+
+probs = clf.predict_proba(input_df)[0]
                 class_ids = clf.classes_.tolist()
 
                 selected = {tid: probs[class_ids.index(tid)] for tid in [home_id, away_id] if tid in class_ids}
