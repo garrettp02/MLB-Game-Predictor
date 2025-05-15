@@ -333,7 +333,7 @@ elif page == "Team News Feeds":
 
 # === Footer ===
 st.markdown("---")
-version = "v3.0 - News & Schedule Integration"
+version = "v3.1 - News & Schedule Integration"
 last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
 
