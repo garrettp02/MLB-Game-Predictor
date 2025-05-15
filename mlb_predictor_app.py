@@ -154,12 +154,29 @@ if page == "Daily Matchups":
         "TB": "TampaBayRays", "CWS": "whitesox"
     }
 
-    def display_team_reddit(team_abbr):
+    def display_top_reddit_post(team_abbr):
         if team_abbr in team_subreddits:
             subreddit = team_subreddits[team_abbr]
-            url = f"https://www.reddit.com/r/{subreddit}"
-            st.subheader(f"📣 Reddit - r/{subreddit}")
-            st.markdown(f"[Visit r/{subreddit} →]({url})")
+            feed_url = f"https://www.reddit.com/r/{subreddit}/.rss"
+            feed = feedparser.parse(feed_url)
+            st.subheader(f"📣 Reddit - Top Post from r/{subreddit}")
+            
+            for entry in feed.entries:
+                if 'Game Thread' in entry.title or 'Post Game Thread' in entry.title or 'Pre Game Thread' in entry.title:
+                    st.markdown(f"**[{entry.title}]({entry.link})**")
+                    if hasattr(entry, "summary"):
+                        st.write(entry.summary)
+                    st.caption(entry.published)
+                    return
+
+            if feed.entries:
+                entry = feed.entries[0]
+                st.markdown(f"**[{entry.title}]({entry.link})**")
+                if hasattr(entry, "summary"):
+                    st.write(entry.summary)
+                st.caption(entry.published)
+            else:
+                st.info("No recent Reddit posts found.")
         else:
             st.info(f"No subreddit found for {team_abbr}.")
 
@@ -244,67 +261,11 @@ if page == "Daily Matchups":
                         st.markdown("---")
 
             display_team_news(selected_matchup["Home"])
+            display_top_reddit_post(selected_matchup["Home"])
+
             display_team_news(selected_matchup["Away"])
+            display_top_reddit_post(selected_matchup["Away"])
 
-            display_team_reddit(selected_matchup["Home"])
-            display_team_reddit(selected_matchup["Away"])
-# === Live News Feeds ===
-elif page == "Team News Feeds":
-    st.title("📰 MLB Team News Feed")
-
-    team_display_names = {
-        **{k: f"{k} - {v}" for k, v in {
-            "ARI": "D-backs", "ATL": "Braves", "BAL": "Orioles", "BOS": "Red Sox",
-            "CHC": "Cubs", "CIN": "Reds", "CLE": "Guardians", "COL": "Rockies",
-            "CHW": "White Sox", "DET": "Tigers", "HOU": "Astros", "KC": "Royals",
-            "LAA": "Angels", "LAD": "Dodgers", "MIA": "Marlins", "MIL": "Brewers",
-            "MIN": "Twins", "NYM": "Mets", "NYY": "Yankees", "OAK": "Athletics",
-            "PHI": "Phillies", "PIT": "Pirates", "SD": "Padres", "SEA": "Mariners",
-            "SF": "Giants", "STL": "Cardinals", "TB": "Rays", "TEX": "Rangers",
-            "TOR": "Blue Jays", "WSH": "Nationals"
-        }.items()},
-        "AL": "American League", "NL": "National League"
-    }
-
-    selected_label = st.selectbox("Choose a team or league:", list(team_display_names.values()))
-    selected_team = next(k for k, v in team_display_names.items() if v == selected_label)
-
-    if selected_team in team_logos:
-        st.image(team_logos[selected_team], width=150)
-
-    st.subheader(f"Latest news about {team_display_names[selected_team]}")
-
-    team_name_map = {
-        "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
-        "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
-        "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
-        "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
-        "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
-        "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
-        "SF": "giants", "STL": "cardinals", "TB": "rays", "TEX": "rangers",
-        "TOR": "bluejays", "WSH": "nationals"
-    }
-
-    if selected_team in ("AL", "NL"):
-        feed_url = "https://www.espn.com/espn/rss/mlb/news"
-    else:
-        team_name = team_name_map.get(selected_team, selected_team.lower())
-        feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
-
-    feed = feedparser.parse(feed_url)
-    if not feed.entries:
-        st.warning("No recent news found or feed unavailable.")
-    else:
-        for entry in feed.entries[:3]:
-            st.markdown(f"**[{entry.title}]({entry.link})**")
-            if hasattr(entry, "summary"):
-                st.write(entry.summary)
-            if hasattr(entry, "media_content"):
-                for media in entry.media_content:
-                    if media.get("medium") == "image" and "url" in media:
-                        st.image(media["url"], width=250)
-            st.caption(entry.published)
-            st.markdown("---")
 
     # === Show upcoming games ===
     if selected_team in mlb_team_ids:
