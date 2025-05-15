@@ -5,6 +5,7 @@ import feedparser
 import requests
 import datetime
 import matplotlib.pyplot as plt
+import report
 
 # === Load model and mappings ===
 clf = joblib.load("xgb_model_updated.pkl")
@@ -171,11 +172,53 @@ elif page == "Batch Predictions":
 # === Daily Matchups ===
 
 if page == "Daily Matchups":
-    st.title("📅 Today's MLB Matchups & Predictions")
+    st.title("\ud83d\uddd5\ufe0f Today's MLB Matchups & Predictions")
     today = datetime.date.today()
     url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={today}"
     response = requests.get(url)
     data = response.json()
+
+    @st.cache_data
+    def fetch_team_stats_mlbid():
+        url = "https://statsapi.mlb.com/api/v1/teams/statistics?season=2024&group=hitting,pitching"
+        res = requests.get(url)
+        data = res.json()
+
+        team_stats = {}
+
+        for team_entry in data["stats"]:
+            team_info = team_entry["team"]
+            stats = team_entry["stats"]["stats"]
+            team_abbr = team_info.get("abbreviation", team_info["name"][:3].upper())
+
+            win_pct = 0.5
+            walks = 3.0
+            strikeouts = 8.0
+            total_bases = 12.0
+
+            for group in stats:
+                if group["type"] == "season":
+                    s = group["stats"]
+                    wins = int(s.get("wins", 0))
+                    losses = int(s.get("losses", 0))
+                    win_pct = wins / (wins + losses) if (wins + losses) > 0 else 0.5
+
+                    if team_entry["group"]["displayName"] == "pitching":
+                        walks = float(s.get("baseOnBalls", 3.0)) / (wins + losses)
+                        strikeouts = float(s.get("strikeOuts", 8.0)) / (wins + losses)
+                    elif team_entry["group"]["displayName"] == "hitting":
+                        total_bases = float(s.get("totalBases", 12.0)) / (wins + losses)
+
+            team_stats[team_abbr] = {
+                "win_pct": round(win_pct, 3),
+                "walks_issued": round(walks, 2),
+                "strikeouts_thrown": round(strikeouts, 2),
+                "total_bases": round(total_bases, 2)
+            }
+
+        return team_stats
+
+    team_stats = fetch_team_stats_mlbid()
 
     id_to_abbr = {v: k for k, v in mlb_team_ids.items()}
     games = data.get("dates", [])
@@ -197,7 +240,7 @@ if page == "Daily Matchups":
             subreddit = team_subreddits[team_abbr]
             feed_url = f"https://www.reddit.com/r/{subreddit}/.rss"
             feed = feedparser.parse(feed_url)
-            st.subheader(f"📣 Reddit - Top Post from r/{subreddit}")
+            st.subheader(f"\ud83d\udce3 Reddit - Top Post from r/{subreddit}")
 
             for entry in feed.entries:
                 if 'Game Thread' in entry.title or 'Post Game Thread' in entry.title or 'Pre Game Thread' in entry.title:
@@ -228,13 +271,15 @@ if page == "Daily Matchups":
                 home_id = team_map[home_team]
                 away_id = team_map[away_team]
 
-                # Average placeholder values used for new model
+                stats_home = team_stats.get(home_team, {})
+                stats_away = team_stats.get(away_team, {})
+
                 input_df = pd.DataFrame([[
                     home_id, away_id,
-                    0.50, 0.50,
-                    3.0, 3.0,
-                    8.0, 8.0,
-                    12.0, 12.0
+                    stats_home.get("win_pct", 0.50), stats_away.get("win_pct", 0.50),
+                    stats_home.get("walks_issued", 3.0), stats_away.get("walks_issued", 3.0),
+                    stats_home.get("strikeouts_thrown", 8.0), stats_away.get("strikeouts_thrown", 8.0),
+                    stats_home.get("total_bases", 12.0), stats_away.get("total_bases", 12.0)
                 ]], columns=[
                     "home_id", "away_id",
                     "home_win_pct", "away_win_pct",
@@ -298,7 +343,7 @@ if page == "Daily Matchups":
                 team_name = team_name_map.get(team_abbr, team_abbr.lower())
                 feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
                 feed = feedparser.parse(feed_url)
-                st.subheader(f"🗞️ News for {team_abbr}")
+                st.subheader(f"\ud83d\uddf0\ufe0f News for {team_abbr}")
                 if not feed.entries:
                     st.warning("No recent news found or feed unavailable.")
                 else:
@@ -314,6 +359,7 @@ if page == "Daily Matchups":
 
             display_team_news(selected_matchup["Away"])
             display_top_reddit_post(selected_matchup["Away"])
+
 
 # === Live News Feeds ===
 elif page == "Team News Feeds":
