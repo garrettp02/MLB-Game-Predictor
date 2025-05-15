@@ -129,6 +129,10 @@ elif page == "Team News Feeds":
     st.title("📰 MLB Team News Feed")
     selected_team = st.selectbox("Choose a team:", sorted(team_map.keys()))
 
+# Skip invalid teams like AL, NL, or mapping mismatches
+if selected_team in ("AL", "NL") or selected_team not in team_name_map or selected_team not in mlb_team_ids:
+    st.warning(f"Team '{selected_team}' is not supported for news/schedules.")
+    st.stop()
 
 
 
