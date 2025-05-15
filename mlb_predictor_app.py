@@ -10,14 +10,36 @@ reverse_map = joblib.load("reverse_map.pkl")
 
 # === Team logos map (URLs from ESPN or sportslogos.net) ===
 team_logos = {
-    "NYY": "https://a.espncdn.com/i/teamlogos/mlb/500/nyy.png",
-    "BOS": "https://a.espncdn.com/i/teamlogos/mlb/500/bos.png",
-    "LAD": "https://a.espncdn.com/i/teamlogos/mlb/500/lad.png",
-    "SF": "https://a.espncdn.com/i/teamlogos/mlb/500/sf.png",
-    "HOU": "https://a.espncdn.com/i/teamlogos/mlb/500/hou.png",
-    "CHC": "https://a.espncdn.com/i/teamlogos/mlb/500/chc.png",
+    "ARI": "https://a.espncdn.com/i/teamlogos/mlb/500/ari.png",
     "ATL": "https://a.espncdn.com/i/teamlogos/mlb/500/atl.png",
-    # Add more as needed...
+    "BAL": "https://a.espncdn.com/i/teamlogos/mlb/500/bal.png",
+    "BOS": "https://a.espncdn.com/i/teamlogos/mlb/500/bos.png",
+    "CHC": "https://a.espncdn.com/i/teamlogos/mlb/500/chc.png",
+    "CIN": "https://a.espncdn.com/i/teamlogos/mlb/500/cin.png",
+    "CLE": "https://a.espncdn.com/i/teamlogos/mlb/500/cle.png",
+    "COL": "https://a.espncdn.com/i/teamlogos/mlb/500/col.png",
+    "CWS": "https://a.espncdn.com/i/teamlogos/mlb/500/chw.png",
+    "DET": "https://a.espncdn.com/i/teamlogos/mlb/500/det.png",
+    "HOU": "https://a.espncdn.com/i/teamlogos/mlb/500/hou.png",
+    "KC":  "https://a.espncdn.com/i/teamlogos/mlb/500/kc.png",
+    "LAA": "https://a.espncdn.com/i/teamlogos/mlb/500/laa.png",
+    "LAD": "https://a.espncdn.com/i/teamlogos/mlb/500/lad.png",
+    "MIA": "https://a.espncdn.com/i/teamlogos/mlb/500/mia.png",
+    "MIL": "https://a.espncdn.com/i/teamlogos/mlb/500/mil.png",
+    "MIN": "https://a.espncdn.com/i/teamlogos/mlb/500/min.png",
+    "NYM": "https://a.espncdn.com/i/teamlogos/mlb/500/nym.png",
+    "NYY": "https://a.espncdn.com/i/teamlogos/mlb/500/nyy.png",
+    "OAK": "https://a.espncdn.com/i/teamlogos/mlb/500/oak.png",
+    "PHI": "https://a.espncdn.com/i/teamlogos/mlb/500/phi.png",
+    "PIT": "https://a.espncdn.com/i/teamlogos/mlb/500/pit.png",
+    "SD":  "https://a.espncdn.com/i/teamlogos/mlb/500/sd.png",
+    "SEA": "https://a.espncdn.com/i/teamlogos/mlb/500/sea.png",
+    "SF":  "https://a.espncdn.com/i/teamlogos/mlb/500/sf.png",
+    "STL": "https://a.espncdn.com/i/teamlogos/mlb/500/stl.png",
+    "TB":  "https://a.espncdn.com/i/teamlogos/mlb/500/tb.png",
+    "TEX": "https://a.espncdn.com/i/teamlogos/mlb/500/tex.png",
+    "TOR": "https://a.espncdn.com/i/teamlogos/mlb/500/tor.png",
+    "WSH": "https://a.espncdn.com/i/teamlogos/mlb/500/wsh.png
 }
 
 # === Sidebar Navigation ===
