@@ -42,16 +42,6 @@ team_logos = {
     "WSH": "https://a.espncdn.com/i/teamlogos/mlb/500/wsh.png"
 }
 
-coldwire_slugs = {
-    "NYY": "new-york-yankees", "BOS": "boston-red-sox", "LAD": "los-angeles-dodgers", "SF": "san-francisco-giants",
-    "HOU": "houston-astros", "CHC": "chicago-cubs", "ATL": "atlanta-braves", "BAL": "baltimore-orioles",
-    "TEX": "texas-rangers", "PHI": "philadelphia-phillies", "ARI": "arizona-diamondbacks", "SEA": "seattle-mariners",
-    "TOR": "toronto-blue-jays", "MIN": "minnesota-twins", "MIA": "miami-marlins", "CIN": "cincinnati-reds",
-    "MIL": "milwaukee-brewers", "DET": "detroit-tigers", "CLE": "cleveland-guardians", "OAK": "oakland-athletics",
-    "SD": "san-diego-padres", "PIT": "pittsburgh-pirates", "NYM": "new-york-mets", "STL": "st-louis-cardinals",
-    "WSH": "washington-nationals", "CWS": "chicago-white-sox", "LAA": "los-angeles-angels", "COL": "colorado-rockies",
-    "KC": "kansas-city-royals", "TB": "tampa-bay-rays"
-}
 
 st.sidebar.title("MLB Predictor Navigation")
 page = st.sidebar.radio("Go to", ["Single Game Prediction", "Batch Predictions", "Team News Feeds"])
@@ -131,28 +121,30 @@ elif page == "Team News Feeds":
 
     st.subheader(f"Latest news about {selected_team}")
 
-    # Try ColdWire first
-    feed_url = None
-    slug = coldwire_slugs.get(selected_team)
-    if slug:
-        feed_url = f"https://mlbnewsnow.com/tag/{slug}/feed/"
-    else:
-        st.info("ColdWire feed not found. Using ESPN backup.")
-        feed_url = "https://www.espn.com/espn/rss/mlb/news"
+    team_name_map = {
+        "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
+        "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
+        "CWS": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
+        "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
+        "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
+        "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
+        "SF": "giants", "STL": "cardinals", "TB": "rays", "TEX": "rangers",
+        "TOR": "bluejays", "WSH": "nationals"
+    }
+
+    team_name = team_name_map.get(selected_team, selected_team.lower())
+    feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
 
     feed = feedparser.parse(feed_url)
-    found = False
-    for entry in feed.entries[:10]:
-        if selected_team.lower() in entry.title.lower() or selected_team.lower() in entry.summary.lower():
+    if not feed.entries:
+        st.warning("No recent news found or feed unavailable.")
+    else:
+        for entry in feed.entries[:10]:
             st.markdown(f"**[{entry.title}]({entry.link})**")
             st.caption(entry.published)
-            found = True
-
-    if not found:
-        st.info(f"No recent news found for {selected_team}")
 
 # === Footer ===
 st.markdown("---")
-version = "v2.2 - ColdWire News + Logos"
-last_updated = "2025-05-14"
+version = "v2.3 - MLB.com RSS Integration"
+last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
