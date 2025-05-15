@@ -6,7 +6,7 @@ import requests
 import datetime
 import matplotlib.pyplot as plt
 import report
-
+import mlbstatsapi
 # === Load model and mappings ===
 clf = joblib.load("xgb_model_updated.pkl")
 team_map = joblib.load("team_map_updated.pkl")
@@ -178,43 +178,54 @@ if page == "Daily Matchups":
     response = requests.get(url)
     data = response.json()
 
+    import mlbstatsapi
+
     @st.cache_data
     def fetch_team_stats_mlbid():
+        mlb = mlbstatsapi.Mlb()
         team_stats = {}
 
-        def fetch_stats(group):
-            res = requests.get(f"https://statsapi.mlb.com/api/v1/teams/statistics?season=2024&group={group}")
-            if res.status_code != 200:
-                st.warning(f"Stats request for {group} failed with code {res.status_code}")
-                return []
-            return res.json().get("stats", [])
+        all_teams = mlb.get_teams(season=2024)
+        for team in all_teams:
+            abbr = team['abbreviation']
+            team_id = team['id']
 
-        pitching_stats = fetch_stats("pitching")
-        hitting_stats = fetch_stats("hitting")
+            try:
+                stats = mlb.get_team_stats(
+                    team_id,
+                    stats=['season'],
+                    groups=['hitting', 'pitching'],
+                    season=2024
+                )
 
-        for entry in pitching_stats:
-            team = entry["team"]
-            abbr = team.get("abbreviation", team["name"][:3].upper())
-            stats = entry["stats"]["stats"][0]["stats"]
-            wins = int(stats.get("wins", 0))
-            losses = int(stats.get("losses", 0))
-            games = max(wins + losses, 1)
-            team_stats[abbr] = {
-                "win_pct": round(wins / games, 3),
-                "walks_issued": round(float(stats.get("baseOnBalls", 3.0)) / games, 2),
-                "strikeouts_thrown": round(float(stats.get("strikeOuts", 8.0)) / games, 2),
-                "total_bases": 12.0
-            }
+                pitching = stats['stats']['pitching']['season']
+                pitching_games = max(pitching.get('gamesPlayed', 1), 1)
+                walks = pitching.get('baseOnBalls', 3.0)
+                strikeouts = pitching.get('strikeOuts', 8.0)
 
-        for entry in hitting_stats:
-            team = entry["team"]
-            abbr = team.get("abbreviation", team["name"][:3].upper())
-            stats = entry["stats"]["stats"][0]["stats"]
-            wins = int(stats.get("wins", 0))
-            losses = int(stats.get("losses", 0))
-            games = max(wins + losses, 1)
-            if abbr in team_stats:
-                team_stats[abbr]["total_bases"] = round(float(stats.get("totalBases", 12.0)) / games, 2)
+                hitting = stats['stats']['hitting']['season']
+                hitting_games = max(hitting.get('gamesPlayed', 1), 1)
+                total_bases = hitting.get('totalBases', 12.0)
+
+                wins = team.get('record', {}).get('wins', 0)
+                losses = team.get('record', {}).get('losses', 0)
+                win_pct = wins / (wins + losses) if (wins + losses) > 0 else 0.5
+
+                team_stats[abbr] = {
+                    "win_pct": round(win_pct, 3),
+                    "walks_issued": round(walks / pitching_games, 2),
+                    "strikeouts_thrown": round(strikeouts / pitching_games, 2),
+                    "total_bases": round(total_bases / hitting_games, 2)
+                }
+
+            except Exception as e:
+                st.warning(f"Failed to get stats for {abbr}: {e}")
+                team_stats[abbr] = {
+                    "win_pct": 0.5,
+                    "walks_issued": 3.0,
+                    "strikeouts_thrown": 8.0,
+                    "total_bases": 12.0
+                }
 
         return team_stats
 
