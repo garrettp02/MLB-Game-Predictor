@@ -99,6 +99,4 @@ version = "v1.1 - XGBoost upgrade"
 last_updated = "2025-05-14"
 
 st.markdown("---")
-st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")cted[away_id])
-        st.success(f"🏆 Predicted Winner: {winner}")
-        st.caption(f"Confidence margin: {prob_diff:.2f}")
+st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
