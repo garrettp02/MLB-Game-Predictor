@@ -63,8 +63,9 @@ if page == "Single Game Prediction":
     st.title("⚾ MLB Game Winner Predictor (XGBoost Model - Pretrained)")
     st.write("Select two teams to predict the winner based on historical data.")
 
-    home_team = st.selectbox("Home Team", sorted(team_map.keys()))
-    away_team = st.selectbox("Away Team", sorted(team_map.keys()))
+    home_team = st.selectbox("Home Team", filtered_team_keys)
+    away_team = st.selectbox("Away Team", filtered_team_keys)
+
 
     if st.button("Predict Winner"):
         if home_team not in team_map or away_team not in team_map:
