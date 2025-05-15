@@ -56,7 +56,7 @@ mlb_team_ids = {
 filtered_team_keys = [key for key in sorted(team_map.keys()) if key not in ("AL", "NL")]
 
 st.sidebar.title("MLB Predictor Navigation")
-page = st.sidebar.radio("Go to", ["Single Game Prediction", "Batch Predictions", "Team News Feeds"])
+page = st.sidebar.radio("Go to", ["Single Game Prediction", "Batch Predictions", "Team News Feeds", "Daily Matchups"])
 
 # === Single Game Prediction ===
 if page == "Single Game Prediction":
@@ -123,6 +123,48 @@ elif page == "Batch Predictions":
 
         result_df = pd.DataFrame(results)
         st.dataframe(result_df)
+
+# === Daily Matchups ===
+if page == "Daily Matchups":
+    st.title("📅 Today's MLB Matchups & Predictions")
+    today = datetime.date.today()
+    url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={today}"
+    response = requests.get(url)
+    data = response.json()
+
+    games = data.get("dates", [])
+    if not games:
+        st.info("No games scheduled for today.")
+    else:
+        matchups = []
+        for game in games[0]["games"]:
+            home_team = game["teams"]["home"]["team"]["abbreviation"]
+            away_team = game["teams"]["away"]["team"]["abbreviation"]
+
+            if home_team in team_map and away_team in team_map:
+                home_id = team_map[home_team]
+                away_id = team_map[away_team]
+                input_df = pd.DataFrame([[home_id, away_id]], columns=["home_id", "away_id"])
+                probs = clf.predict_proba(input_df)[0]
+                class_ids = clf.classes_.tolist()
+
+                selected = {tid: probs[class_ids.index(tid)] for tid in [home_id, away_id] if tid in class_ids}
+                if selected:
+                    winner_id = max(selected, key=selected.get)
+                    predicted = reverse_map[winner_id]
+                    margin = abs(selected[home_id] - selected[away_id])
+                else:
+                    predicted = "Unavailable"
+                    margin = 0
+
+                matchups.append({
+                    "Away": away_team,
+                    "Home": home_team,
+                    "Predicted Winner": predicted,
+                    "Confidence": round(margin, 3)
+                })
+
+        st.dataframe(pd.DataFrame(matchups))
 
 # === Live News Feeds ===
 elif page == "Team News Feeds":
