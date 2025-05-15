@@ -234,11 +234,18 @@ if page == "Daily Matchups":
                         st.caption(entry.published)
                         st.markdown("---")
                 def embed_team_tweet(team_abbr):
-                if team_abbr in twitter_handles:
+                    if team_abbr in twitter_handles:
                     handle = twitter_handles[team_abbr]
-                    tweet_html = f'<blockquote class="twitter-tweet"><a href="https://twitter.com/{handle}"></a></blockquote>'
+                    tweet_html = f'''
+                        <blockquote class="twitter-tweet">
+                            <a href="https://twitter.com/{handle}"></a>
+                        </blockquote>
+                        <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+                    '''
                     st.markdown(f"### 🐦 Latest Tweet from @{handle}", unsafe_allow_html=True)
-                    st.components.v1.html(tweet_html + "<script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>", height=300)
+                    st.components.v1.html(tweet_html, height=300)
+                else:
+                    st.info(f"No Twitter handle found for {team_abbr}.")
 
             embed_team_tweet(selected_matchup["Home"])
             embed_team_tweet(selected_matchup["Away"])
