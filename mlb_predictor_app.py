@@ -45,6 +45,17 @@ team_logos = {
     "WSH": "https://a.espncdn.com/i/teamlogos/mlb/500/wsh.png"
 }
 
+twitter_handles = {
+    "ARI": "Dbacks", "ATL": "Braves", "BAL": "Orioles", "BOS": "RedSox",
+    "CHC": "Cubs", "CIN": "Reds", "CLE": "CleGuardians", "COL": "Rockies",
+    "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "Royals",
+    "LAA": "Angels", "LAD": "Dodgers", "MIA": "Marlins", "MIL": "Brewers",
+    "MIN": "Twins", "NYM": "Mets", "NYY": "Yankees", "OAK": "Athletics",
+    "PHI": "Phillies", "PIT": "Pirates", "SD": "Padres", "SEA": "Mariners",
+    "SF": "SFGiants", "STL": "Cardinals", "TB": "RaysBaseball", "TEX": "Rangers",
+    "TOR": "BlueJays", "WSH": "Nationals"
+}
+
 mlb_team_ids = {
     "ARI": 109, "ATL": 144, "BAL": 110, "BOS": 111, "CHC": 112,
     "CIN": 113, "CLE": 114, "COL": 115, "CHW": 145, "DET": 116,
@@ -222,6 +233,15 @@ if page == "Daily Matchups":
                             st.write(entry.summary)
                         st.caption(entry.published)
                         st.markdown("---")
+                def embed_team_tweet(team_abbr):
+                if team_abbr in twitter_handles:
+                    handle = twitter_handles[team_abbr]
+                    tweet_html = f'<blockquote class="twitter-tweet"><a href="https://twitter.com/{handle}"></a></blockquote>'
+                    st.markdown(f"### 🐦 Latest Tweet from @{handle}", unsafe_allow_html=True)
+                    st.components.v1.html(tweet_html + "<script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>", height=300)
+
+            embed_team_tweet(selected_matchup["Home"])
+            embed_team_tweet(selected_matchup["Away"])
 
             display_team_news(selected_matchup["Home"])
             display_team_news(selected_matchup["Away"])
