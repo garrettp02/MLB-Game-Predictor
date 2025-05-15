@@ -160,7 +160,7 @@ if page == "Daily Matchups":
             feed_url = f"https://www.reddit.com/r/{subreddit}/.rss"
             feed = feedparser.parse(feed_url)
             st.subheader(f"📣 Reddit - Top Post from r/{subreddit}")
-            
+
             for entry in feed.entries:
                 if 'Game Thread' in entry.title or 'Post Game Thread' in entry.title or 'Pre Game Thread' in entry.title:
                     st.markdown(f"**[{entry.title}]({entry.link})**")
@@ -265,8 +265,6 @@ if page == "Daily Matchups":
 
             display_team_news(selected_matchup["Away"])
             display_top_reddit_post(selected_matchup["Away"])
-
-
     # === Show upcoming games ===
     if selected_team in mlb_team_ids:
         st.subheader("📅 Upcoming Schedule")
