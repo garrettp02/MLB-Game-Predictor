@@ -92,4 +92,11 @@ if st.button("Predict Winner"):
             predicted_winner = reverse_map[winner_id]
             prob_margin = abs(selected[home_id] - selected[away_id])
             st.success(f"🏆 Predicted Winner: {predicted_winner}")
-            st.caption(f"📊 Confidence margin: {prob_margin:.2f}")
+             st.caption(f"📊 Confidence margin: {prob_margin:.2f}")
+
+import datetime
+version = "v1.1 - XGBoost upgrade"
+last_updated = "2025-05-14"
+
+st.markdown("---")
+st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
