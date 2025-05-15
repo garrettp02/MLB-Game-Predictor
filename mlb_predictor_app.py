@@ -171,19 +171,15 @@ if page == "Daily Matchups":
                     "Away Win %": round(selected.get(away_id, 0) * 100, 1)
                 })
 
-        st.dataframe(pd.DataFrame(matchups))
+        df = pd.DataFrame(matchups)
+        st.dataframe(df)
 
-    
-
-df = pd.DataFrame(matchups)
-
-fig, ax = plt.subplots(figsize=(8, 5))
-ax.bar(df["Home"] + " vs " + df["Away"], df["Confidence"], color="skyblue")
-ax.set_ylabel("Confidence")
-ax.set_title("Prediction Confidence for Today's Matchups")
-ax.set_xticklabels(df["Home"] + " vs " + df["Away"], rotation=45, ha='right')
-
-st.pyplot(fig)
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.bar(df["Home"] + " vs " + df["Away"], df["Confidence"], color="skyblue")
+        ax.set_ylabel("Confidence")
+        ax.set_title("Prediction Confidence for Today's Matchups")
+        ax.set_xticklabels(df["Home"] + " vs " + df["Away"], rotation=45, ha='right')
+        st.pyplot(fig)
 
 
 # === Live News Feeds ===
