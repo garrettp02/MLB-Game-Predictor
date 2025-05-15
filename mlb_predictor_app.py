@@ -159,31 +159,34 @@ elif page == "Team News Feeds":
                         st.image(media["url"], width=250)
             st.caption(entry.published)
             st.markdown("---")
-   
-# === Show upcoming games ===
-st.subheader("📅 Upcoming Schedule")
-team_id = mlb_team_ids[selected_team]
-today = datetime.date.today()
-end = today + datetime.timedelta(days=14)
-url = f"https://statsapi.mlb.com/api/v1/schedule?teamId={team_id}&sportId=1&startDate={today}&endDate={end}"
-response = requests.get(url)
-data = response.json()
 
-games = data.get("dates", [])
-if not games:
-    st.info("No upcoming games found.")
-else:
-    for day in games[:5]:
-        for game in day["games"]:
-            opponent = game["teams"]["away"]["team"] if game["teams"]["home"]["team"]["id"] == team_id else game["teams"]["home"]["team"]
-            game_date = game["gameDate"]
-            venue = game["venue"]["name"]
-            home_team = game["teams"]["home"]["team"]["name"]
-            away_team = game["teams"]["away"]["team"]["name"]
-            st.markdown(f"**{away_team} @ {home_team}** — {game_date[:10]} at {venue}")
+    # === Show upcoming games ===
+    st.subheader("📅 Upcoming Schedule")
+    team_id = mlb_team_ids.get(selected_team)
+    if team_id:
+        today = datetime.date.today()
+        end = today + datetime.timedelta(days=14)
+        url = f"https://statsapi.mlb.com/api/v1/schedule?teamId={team_id}&sportId=1&startDate={today}&endDate={end}"
+        response = requests.get(url)
+        data = response.json()
+
+        games = data.get("dates", [])
+        if not games:
+            st.info("No upcoming games found.")
+        else:
+            for day in games[:5]:
+                for game in day["games"]:
+                    opponent = game["teams"]["away"]["team"] if game["teams"]["home"]["team"]["id"] == team_id else game["teams"]["home"]["team"]
+                    game_date = game["gameDate"]
+                    venue = game["venue"]["name"]
+                    home_team = game["teams"]["home"]["team"]["name"]
+                    away_team = game["teams"]["away"]["team"]["name"]
+                    st.markdown(f"**{away_team} @ {home_team}** — {game_date[:10]} at {venue}")
+    else:
+        st.error("Team ID not found for schedule lookup.")
 
 # === Footer ===
 st.markdown("---")
-version = "v2.4 - News Summaries and Thumbnails"
+version = "v2.5 - News & Schedule Integration"
 last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
