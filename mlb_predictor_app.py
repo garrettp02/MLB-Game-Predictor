@@ -142,23 +142,30 @@ if page == "Single Game Prediction":
         col1, col2 = st.columns(2)
 
         with col1:
-            home_win_pct = st.slider("Home Win %", 0.0, 1.0, 0.55)
+            home_win_slider = st.slider("Home Win %", 0.0, 1.0, 0.55, step=0.01, key="home_win_slider")
             home_win_pct = st.number_input("Or type value for Home Win %", min_value=0.0, max_value=1.0, value=home_win_slider, step=0.01, key="home_win_input")
-            walks_home = st.slider("Walks Issued (Home)", 0.0, 10.0, 3.1)
+
+            walks_home_slider = st.slider("Walks Issued (Home)", 0.0, 10.0, 3.1, step=0.1, key="walks_home_slider")
             walks_home = st.number_input("Or type value for Walks Issued (Home)", min_value=0.0, max_value=10.0, value=walks_home_slider, step=0.1, key="walks_home_input")
-            k_home = st.slider("Strikeouts Thrown (Home)", 0.0, 15.0, 8.9)
+
+            k_home_slider = st.slider("Strikeouts Thrown (Home)", 0.0, 15.0, 8.9, step=0.1, key="k_home_slider")
             k_home = st.number_input("Or type value for Strikeouts Thrown (Home)", min_value=0.0, max_value=15.0, value=k_home_slider, step=0.1, key="k_home_input")
-            tb_home = st.slider("Total Bases (Home)", 0.0, 20.0, 12.3)
+
+            tb_home_slider = st.slider("Total Bases (Home)", 0.0, 20.0, 12.3, step=0.1, key="tb_home_slider")
             tb_home = st.number_input("Or type value for Total Bases (Home)", min_value=0.0, max_value=20.0, value=tb_home_slider, step=0.1, key="tb_home_input")
 
         with col2:
-            away_win_pct = st.slider("Away Win %", 0.0, 1.0, 0.48)
+            away_win_slider = st.slider("Away Win %", 0.0, 1.0, 0.48, step=0.01, key="away_win_slider")
             away_win_pct = st.number_input("Or type value for Away Win %", min_value=0.0, max_value=1.0, value=away_win_slider, step=0.01, key="away_win_input")
-            walks_away = st.slider("Walks Issued (Away)", 0.0, 10.0, 2.8)
+
+            walks_away_slider = st.slider("Walks Issued (Away)", 0.0, 10.0, 2.8, step=0.1, key="walks_away_slider")
             walks_away = st.number_input("Or type value for Walks Issued (Away)", min_value=0.0, max_value=10.0, value=walks_away_slider, step=0.1, key="walks_away_input")
-            k_away = st.slider("Strikeouts Thrown (Away)", 0.0, 15.0, 9.1)
+
+            k_away_slider = st.slider("Strikeouts Thrown (Away)", 0.0, 15.0, 9.1, step=0.1, key="k_away_slider")
             k_away = st.number_input("Or type value for Strikeouts Thrown (Away)", min_value=0.0, max_value=15.0, value=k_away_slider, step=0.1, key="k_away_input")
-            tb_away = st.slider("Total Bases (Away)", 0.0, 20.0, 11.5)
+
+            tb_away_slider = st.slider("Total Bases (Away)", 0.0, 20.0, 11.5, step=0.1, key="tb_away_slider")
+            tb_away = st.number_input("Or type value for Total Bases (Away)", min_value=0.0, max_value=20.0, value=tb_away_slider, step=0.1, key="tb_away_input")
 
     else:
         # Default average stats
