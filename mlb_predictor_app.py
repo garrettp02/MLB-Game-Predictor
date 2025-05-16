@@ -337,21 +337,60 @@ if page == "Daily Matchups":
             if home_team in team_map and away_team in team_map:
                 home_id = team_map[home_team]
                 away_id = team_map[away_team]
+            
+            # Pull live API stats
+            home_stats = get_last_10_game_stats(mlb_team_ids[home])
+            away_stats = get_last_10_game_stats(mlb_team_ids[away])
+            home_win_pct = get_team_win_pct(home)
+            away_win_pct = get_team_win_pct(away)
+
+            # Use fallback if API fails
+            if home_stats and away_stats:
+                walks_home = home_stats["walks_issued"]
+                walks_away = away_stats["walks_issued"]
+                k_home = home_stats["strikeouts_thrown"]
+                k_away = away_stats["strikeouts_thrown"]
+                tb_home = home_stats["total_bases"]
+                tb_away = away_stats["total_bases"]
+            else:
+                home_win_pct = 0.50
+                away_win_pct = 0.50
+                walks_home = 3.0
+                walks_away = 3.0
+                k_home = 8.0
+                k_away = 8.0
+                tb_home = 12.0
+                tb_away = 12.0
+
+            # Create input dataframe with real or fallback values
+            input_df = pd.DataFrame([[
+                home_id, away_id,
+                home_win_pct, away_win_pct,
+                walks_home, walks_away,
+                k_home, k_away,
+                tb_home, tb_away
+            ]], columns=[
+                "home_id", "away_id",
+                "home_win_pct", "away_win_pct",
+                "Walks Issued - Home", "Walks Issued - Away",
+                "Strikeouts Thrown - Home", "Strikeouts Thrown - Away",
+                "Total Bases - Home", "Total Bases - Away"
+            ])
 
                 # Average placeholder values used for new model
-                input_df = pd.DataFrame([[
-                    home_id, away_id,
-                    0.50, 0.50,
-                    3.0, 3.0,
-                    8.0, 8.0,
-                    12.0, 12.0
-                ]], columns=[
-                    "home_id", "away_id",
-                    "home_win_pct", "away_win_pct",
-                    "Walks Issued - Home", "Walks Issued - Away",
-                    "Strikeouts Thrown - Home", "Strikeouts Thrown - Away",
-                    "Total Bases - Home", "Total Bases - Away"
-                ])
+                #input_df = pd.DataFrame([[
+                 #   home_id, away_id,
+                  #  0.50, 0.50,
+                   # 3.0, 3.0,
+                    #8.0, 8.0,
+                    #12.0, 12.0
+                #]], columns=[
+               #     "home_id", "away_id",
+                #    "home_win_pct", "away_win_pct",
+                 #   "Walks Issued - Home", "Walks Issued - Away",
+                  #  "Strikeouts Thrown - Home", "Strikeouts Thrown - Away",
+                   # "Total Bases - Home", "Total Bases - Away"
+                #])
 
                 probs = clf.predict_proba(input_df)[0]
                 class_ids = clf.classes_.tolist()
