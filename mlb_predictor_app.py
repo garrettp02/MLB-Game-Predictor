@@ -13,6 +13,67 @@ clf = joblib.load("xgb_model_updated.pkl")
 team_map = joblib.load("team_map_updated.pkl")
 reverse_map = joblib.load("reverse_map_updated.pkl")
 
+# === Load API data ===
+@st.cache_data(ttl=3600)
+def get_last_10_game_stats(team_id):
+    schedule_url = f"https://statsapi.mlb.com/api/v1/schedule?teamId={team_id}&season=2025&sportId=1&gameType=R"
+    schedule_data = requests.get(schedule_url).json()
+
+    games = []
+    for date in schedule_data.get("dates", []):
+        for game in date.get("games", []):
+            if game["status"]["abstractGameState"] == "Final":
+                games.append(game["gamePk"])
+
+    games = sorted(games, reverse=True)[:10]
+
+    total_bases_list = []
+    walks_issued_list = []
+    strikeouts_thrown_list = []
+
+    for game_pk in games:
+        boxscore_url = f"https://statsapi.mlb.com/api/v1/game/{game_pk}/boxscore"
+        box_data = requests.get(boxscore_url).json()
+
+        teams = box_data.get("teams", {})
+        for side in ["home", "away"]:
+            team = teams[side].get("team", {})
+            if team["id"] == team_id:
+                stats = teams[side].get("teamStats", {})
+                batting_stats = stats.get("batting", {})
+                pitching_stats = stats.get("pitching", {})
+
+                total_bases = batting_stats.get("totalBases", 0)
+                walks_issued = pitching_stats.get("baseOnBalls", 0)
+                strikeouts_thrown = pitching_stats.get("strikeOuts", 0)
+
+                total_bases_list.append(total_bases)
+                walks_issued_list.append(walks_issued)
+                strikeouts_thrown_list.append(strikeouts_thrown)
+                break
+
+    if len(total_bases_list) == 0:
+        return None
+
+    return {
+        "total_bases": round(sum(total_bases_list) / len(total_bases_list), 2),
+        "walks_issued": round(sum(walks_issued_list) / len(walks_issued_list), 2),
+        "strikeouts_thrown": round(sum(strikeouts_thrown_list) / len(strikeouts_thrown_list), 2)
+    }
+
+@st.cache_data(ttl=3600)
+def get_team_win_pct(team_abbr):
+    team_id = mlb_team_ids[team_abbr]
+    standings_url = "https://statsapi.mlb.com/api/v1/standings?season=2025&leagueId=103,104&standingsTypes=regularSeason"
+    standings_data = requests.get(standings_url).json()
+
+    for record in standings_data.get("records", []):
+        for tr in record.get("teamRecords", []):
+            if tr["team"]["id"] == team_id:
+                w, l = tr["wins"], tr["losses"]
+                return round(w / (w + l), 3) if (w + l) > 0 else 0.5
+    return 0.5
+
 
 # === Team logos map ===
 team_logos = {
@@ -101,6 +162,37 @@ if page == "Single Game Prediction":
         k_away = 9.1
         tb_home = 12.3
         tb_away = 11.5
+
+    # === Display Charts ===
+
+    st.markdown("### 📊 Live 10-Game Stats for Selected Teams")
+    with st.spinner("Fetching stats from MLB API..."):
+        home_stats = get_last_10_game_stats(mlb_team_ids[home_team])
+        away_stats = get_last_10_game_stats(mlb_team_ids[away_team])
+        home_win = get_team_win_pct(home_team)
+        away_win = get_team_win_pct(away_team)
+
+        if home_stats and away_stats:
+            display_df = pd.DataFrame({
+                "Stat": ["Total Bases", "Walks Issued", "Strikeouts Thrown", "Win %"],
+                home_team: [
+                    home_stats["total_bases"],
+                    home_stats["walks_issued"],
+                    home_stats["strikeouts_thrown"],
+                    home_win
+                ],
+                away_team: [
+                    away_stats["total_bases"],
+                    away_stats["walks_issued"],
+                    away_stats["strikeouts_thrown"],
+                    away_win
+                ]
+            }).set_index("Stat")
+
+            st.dataframe(display_df.style.format("{:.3f}"), use_container_width=True)
+        else:
+            st.warning("Could not retrieve stats for one or both teams.")
+
 
     if st.button("Predict Winner"):
         if home_team not in team_map or away_team not in team_map:
@@ -498,3 +590,4 @@ st.markdown("---")
 version = "v4.0 - News & Schedule Integration"
 last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
+
