@@ -125,7 +125,7 @@ id_to_abbr = {v: k for k, v in mlb_team_ids.items()}
 filtered_team_keys = [key for key in sorted(team_map.keys()) if key not in ("AL", "NL")]
 
 st.sidebar.title("MLB Predictor Navigation")
-page = st.sidebar.radio("Go to", ["Single Game Prediction", "Batch Predictions", "Team News Feeds", "Daily Matchups", "10-Game Averages"])
+page = st.sidebar.radio("Go to", ["Daily Matchups", "Single Game Prediction", "Team News Feeds", "10-Game Averages"])
 
 # === Single Game Prediction ===
 if page == "Single Game Prediction":
@@ -246,36 +246,6 @@ if page == "Single Game Prediction":
                 st.success(f"🏆 Predicted Winner: {predicted_winner}")
                 st.caption(f"📊 Confidence margin: {prob_margin:.2%}")
 
-
-
-# === Batch Predictions ===
-elif page == "Batch Predictions":
-    st.title("📂 Batch Game Predictions")
-    uploaded = st.file_uploader("Upload a CSV with matchups (columns: home_team, away_team)", type="csv")
-
-    if uploaded:
-        matchups = pd.read_csv(uploaded)
-        results = []
-        for _, row in matchups.iterrows():
-            home = row["home_team"]
-            away = row["away_team"]
-            if home in team_map and away in team_map:
-                input_df = pd.DataFrame([[team_map[home], team_map[away]]], columns=["home_id", "away_id"])
-                probs = clf.predict_proba(input_df)[0]
-                class_ids = clf.classes_.tolist()
-                selected = {tid: probs[class_ids.index(tid)] for tid in [team_map[home], team_map[away]]}
-                winner_id = max(selected, key=selected.get)
-                results.append({
-                    "Home": home,
-                    "Away": away,
-                    "Predicted Winner": reverse_map[winner_id],
-                    "Confidence": round(abs(selected[team_map[home]] - selected[team_map[away]]), 4)
-                })
-            else:
-                results.append({"Home": home, "Away": away, "Predicted Winner": "Invalid Team", "Confidence": 0})
-
-        result_df = pd.DataFrame(results)
-        st.dataframe(result_df)
 
 
 # === Daily Matchups ===
@@ -433,6 +403,22 @@ if page == "Daily Matchups":
 
         elif view_mode == "Detailed Matchup View":
             selected_matchup = st.selectbox("Select a Matchup", matchups, format_func=lambda x: f"{x['Away']} @ {x['Home']}")
+            home_team = selected_matchup["Home"]
+            away_team = selected_matchup["Away"]
+
+            # Display matchup logos and teams
+            if home_team in team_logos and away_team in team_logos:
+                colA, colAt, colH = st.columns([1.5, 1, 1.5])
+                with colA:
+                    st.image(team_logos[away_team], width=100)
+                    st.caption(f"{away_team}")
+                with colAt:
+                    st.markdown("<h3 style='text-align: center;'>@</h3>", unsafe_allow_html=True)
+                with colH:
+                    st.image(team_logos[home_team], width=100)
+                    st.caption(f"{home_team}")
+
+
 
             st.markdown(f"### Predicted Winner: **{selected_matchup['Predicted Winner']}**")
             st.write(f"**Home Win Probability:** {selected_matchup['Home Win %']}%")
@@ -650,5 +636,4 @@ st.markdown("---")
 version = "v5.0 - Live Data"
 last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
-
 
