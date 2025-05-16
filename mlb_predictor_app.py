@@ -306,65 +306,65 @@ else:
     predicted = "Unavailable"
     margin = 0
 
-matchups.append({
-    "Away": away_team,
-    "Home": home_team,
-    "Predicted Winner": predicted,
-    "Confidence": round(margin, 3),
-    "Home Win %": round(selected.get(home_id, 0) * 100, 1),
-    "Away Win %": round(selected.get(away_id, 0) * 100, 1)
-})
+    matchups.append({
+        "Away": away_team,
+        "Home": home_team,
+        "Predicted Winner": predicted,
+        "Confidence": round(margin, 3),
+        "Home Win %": round(selected.get(home_id, 0) * 100, 1),
+        "Away Win %": round(selected.get(away_id, 0) * 100, 1)
+    })
 
-        view_mode = st.radio("View Mode", ["View All Matchups", "Detailed Matchup View"], horizontal=True)
-        
-        if view_mode == "View All Matchups":
-            st.dataframe(pd.DataFrame(matchups))
-            df = pd.DataFrame(matchups)
-            fig, ax = plt.subplots(figsize=(8, 5))
-            ax.bar(df["Home"] + " vs " + df["Away"], df["Confidence"], color="skyblue")
-            ax.set_ylabel("Confidence")
-            ax.set_title("Prediction Confidence for Today's Matchups")
-            ax.set_xticklabels(df["Home"] + " vs " + df["Away"], rotation=45, ha='right')
-            st.pyplot(fig)
-        
-        elif view_mode == "Detailed Matchup View":
-            selected_matchup = st.selectbox("Select a Matchup", matchups, format_func=lambda x: f"{x['Away']} @ {x['Home']}")
-        
-            st.markdown(f"### Predicted Winner: **{selected_matchup['Predicted Winner']}**")
-            st.write(f"**Home Win Probability:** {selected_matchup['Home Win %']}%")
-            st.write(f"**Away Win Probability:** {selected_matchup['Away Win %']}%")
-            st.write(f"**Confidence Margin:** {selected_matchup['Confidence']}")
-        
-            def display_team_news(team_abbr):
-                team_name_map = {
-                    "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
-                    "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
-                    "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
-                    "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
-                    "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
-                    "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
-                    "SF": "giants", "STL": "cardinals", "TB": "rays", "TEX": "rangers",
-                    "TOR": "bluejays", "WSH": "nationals"
-                }
-                team_name = team_name_map.get(team_abbr, team_abbr.lower())
-                feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
-                feed = feedparser.parse(feed_url)
-                st.subheader(f"🗞️ News for {team_abbr}")
-                if not feed.entries:
-                    st.warning("No recent news found or feed unavailable.")
-                else:
-                    for entry in feed.entries[:3]:
-                        st.markdown(f"**[{entry.title}]({entry.link})**")
-                        if hasattr(entry, "summary"):
-                            st.write(entry.summary)
-                        st.caption(entry.published)
-                        st.markdown("---")
-        
-            display_team_news(selected_matchup["Home"])
-            display_top_reddit_post(selected_matchup["Home"])
-        
-            display_team_news(selected_matchup["Away"])
-            display_top_reddit_post(selected_matchup["Away"])
+view_mode = st.radio("View Mode", ["View All Matchups", "Detailed Matchup View"], horizontal=True)
+
+if view_mode == "View All Matchups":
+    st.dataframe(pd.DataFrame(matchups))
+    df = pd.DataFrame(matchups)
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.bar(df["Home"] + " vs " + df["Away"], df["Confidence"], color="skyblue")
+    ax.set_ylabel("Confidence")
+    ax.set_title("Prediction Confidence for Today's Matchups")
+    ax.set_xticklabels(df["Home"] + " vs " + df["Away"], rotation=45, ha='right')
+    st.pyplot(fig)
+
+elif view_mode == "Detailed Matchup View":
+    selected_matchup = st.selectbox("Select a Matchup", matchups, format_func=lambda x: f"{x['Away']} @ {x['Home']}")
+
+    st.markdown(f"### Predicted Winner: **{selected_matchup['Predicted Winner']}**")
+    st.write(f"**Home Win Probability:** {selected_matchup['Home Win %']}%")
+    st.write(f"**Away Win Probability:** {selected_matchup['Away Win %']}%")
+    st.write(f"**Confidence Margin:** {selected_matchup['Confidence']}")
+
+    def display_team_news(team_abbr):
+        team_name_map = {
+            "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
+            "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
+            "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
+            "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
+            "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
+            "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
+            "SF": "giants", "STL": "cardinals", "TB": "rays", "TEX": "rangers",
+            "TOR": "bluejays", "WSH": "nationals"
+        }
+        team_name = team_name_map.get(team_abbr, team_abbr.lower())
+        feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
+        feed = feedparser.parse(feed_url)
+        st.subheader(f"🗞️ News for {team_abbr}")
+        if not feed.entries:
+            st.warning("No recent news found or feed unavailable.")
+        else:
+            for entry in feed.entries[:3]:
+                st.markdown(f"**[{entry.title}]({entry.link})**")
+                if hasattr(entry, "summary"):
+                    st.write(entry.summary)
+                st.caption(entry.published)
+                st.markdown("---")
+
+    display_team_news(selected_matchup["Home"])
+    display_top_reddit_post(selected_matchup["Home"])
+
+    display_team_news(selected_matchup["Away"])
+    display_top_reddit_post(selected_matchup["Away"])
 
 # === Live News Feeds ===
 elif page == "Team News Feeds":
@@ -449,5 +449,7 @@ elif page == "Team News Feeds":
 st.markdown("---")
 version = "v4.0 - News & Schedule Integration"
 last_updated = "2025-05-15"
+st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
+
 
 
