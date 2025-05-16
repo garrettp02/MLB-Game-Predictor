@@ -66,87 +66,6 @@ filtered_team_keys = [key for key in sorted(team_map.keys()) if key not in ("AL"
 st.sidebar.title("MLB Predictor Navigation")
 page = st.sidebar.radio("Go to", ["Single Game Prediction", "Batch Predictions", "Team News Feeds", "Daily Matchups"])
 
-
-# === Load live team stats ===
-def fetch_team_stats_2025():
-    mlb_team_ids = {
-        "ARI": 109, "ATL": 144, "BAL": 110, "BOS": 111, "CHC": 112,
-        "CIN": 113, "CLE": 114, "COL": 115, "CHW": 145, "DET": 116,
-        "HOU": 117, "KC": 118, "LAA": 108, "LAD": 119, "MIA": 146,
-        "MIL": 158, "MIN": 142, "NYM": 121, "NYY": 147, "OAK": 133,
-        "PHI": 143, "PIT": 134, "SD": 135, "SEA": 136, "SF": 137,
-        "STL": 138, "TB": 139, "TEX": 140, "TOR": 141, "WSH": 120
-    }
-    id_to_abbr = {v: k for k, v in mlb_team_ids.items()}
-    team_stats = {}
-
-    # Pull hitting stats
-    hitting_url = "https://statsapi.mlb.com/api/v1/stats?stats=season&group=hitting&season=2025&sportIds=1"
-    hitting_data = requests.get(hitting_url).json()
-    for record in hitting_data.get("stats", []):
-        for split in record.get("splits", []):
-            team_id = split.get("team", {}).get("id")
-            abbr = id_to_abbr.get(team_id, "UNK")
-            stats = split.get("stat", {})
-            games = max(stats.get("gamesPlayed", 1), 1)
-            total_bases = stats.get("totalBases", 0)
-            if abbr not in team_stats:
-                team_stats[abbr] = {}
-            team_stats[abbr]["total_bases"] = round((total_bases / games) * 7.5, 2)
-
-    # Pull pitching stats
-    pitching_url = "https://statsapi.mlb.com/api/v1/stats?stats=season&group=pitching&season=2025&sportIds=1"
-    pitching_data = requests.get(pitching_url).json()
-    for record in pitching_data.get("stats", []):
-        for split in record.get("splits", []):
-            team_id = split.get("team", {}).get("id")
-            abbr = id_to_abbr.get(team_id, "UNK")
-            stats = split.get("stat", {})
-            games = max(stats.get("gamesPlayed", 1), 1)
-            walks = stats.get("baseOnBalls", 0)
-            strikeouts = stats.get("strikeOuts", 0)
-            if abbr not in team_stats:
-                team_stats[abbr] = {}
-            team_stats[abbr]["walks_issued"] = round((walks / games) * 1.73, 2)
-            team_stats[abbr]["strikeouts_thrown"] = round((strikeouts / games) * 1.52, 2)
-
-    # Pull win/loss record
-    standings_url = "https://statsapi.mlb.com/api/v1/standings?season=2025&leagueId=103,104&standingsTypes=regularSeason"
-    standings_data = requests.get(standings_url).json()
-    for record in standings_data.get("records", []):
-        for team_record in record.get("teamRecords", []):
-            team_id = team_record.get("team", {}).get("id")
-            abbr = id_to_abbr.get(team_id, "UNK")
-            wins = team_record.get("wins", 0)
-            losses = team_record.get("losses", 0)
-            win_pct = wins / (wins + losses) if (wins + losses) > 0 else 0.5
-            if abbr not in team_stats:
-                team_stats[abbr] = {}
-            team_stats[abbr]["win_pct"] = round(win_pct, 3)
-
-    df = pd.DataFrame.from_dict(team_stats, orient="index")
-    df.fillna(df.mean(numeric_only=True), inplace=True)
-    return df
-
-live_stats_df = fetch_team_stats_2025()
-
-# === Prepare for streamlit ===
-mlb_team_ids = {
-    "ARI": 109, "ATL": 144, "BAL": 110, "BOS": 111, "CHC": 112,
-    "CIN": 113, "CLE": 114, "COL": 115, "CHW": 145, "DET": 116,
-    "HOU": 117, "KC": 118, "LAA": 108, "LAD": 119, "MIA": 146,
-    "MIL": 158, "MIN": 142, "NYM": 121, "NYY": 147, "OAK": 133,
-    "PHI": 143, "PIT": 134, "SD": 135, "SEA": 136, "SF": 137,
-    "STL": 138, "TB": 139, "TEX": 140, "TOR": 141, "WSH": 120
-}
-id_to_abbr = {v: k for k, v in mlb_team_ids.items()}
-filtered_team_keys = [key for key in sorted(team_map.keys()) if key not in ("AL", "NL")]
-
-st.sidebar.title("MLB Predictor Navigation")
-page = st.sidebar.radio("Go to", ["Single Game Prediction", "Daily Matchups"])
-
-
-# === Single Game Prediction ===
 # === Single Game Prediction ===
 if page == "Single Game Prediction":
     st.title("⚾ MLB Game Winner Predictor (XGBoost Model - Pretrained)")
@@ -173,17 +92,15 @@ if page == "Single Game Prediction":
             k_away = st.slider("Strikeouts Thrown (Away)", 0.0, 15.0, 9.1)
             tb_away = st.slider("Total Bases (Away)", 0.0, 20.0, 11.5)
     else:
-        home_stats = live_stats_df.loc.get(home_team, {})
-        away_stats = live_stats_df.loc.get(away_team, {})
-
-        home_win_pct = home_stats.get("win_pct", 0.5)
-        away_win_pct = away_stats.get("win_pct", 0.5)
-        walks_home = home_stats.get("walks_issued", 3.0)
-        walks_away = away_stats.get("walks_issued", 3.0)
-        k_home = home_stats.get("strikeouts_thrown", 8.0)
-        k_away = away_stats.get("strikeouts_thrown", 8.0)
-        tb_home = home_stats.get("total_bases", 12.0)
-        tb_away = away_stats.get("total_bases", 12.0)
+        # Default average stats
+        home_win_pct = 0.55
+        away_win_pct = 0.48
+        walks_home = 3.1
+        walks_away = 2.8
+        k_home = 8.9
+        k_away = 9.1
+        tb_home = 12.3
+        tb_away = 11.5
 
     if st.button("Predict Winner"):
         if home_team not in team_map or away_team not in team_map:
@@ -221,6 +138,8 @@ if page == "Single Game Prediction":
                 prob_margin = abs(selected[home_id] - selected[away_id])
                 st.success(f"🏆 Predicted Winner: {predicted_winner}")
                 st.caption(f"📊 Confidence margin: {prob_margin:.2%}")
+
+
 # === Batch Predictions ===
 elif page == "Batch Predictions":
     st.title("📂 Batch Game Predictions")
@@ -253,62 +172,15 @@ elif page == "Batch Predictions":
 
 # === Daily Matchups ===
 
-# === Daily Matchups ===
 if page == "Daily Matchups":
     st.title("📅 Today's MLB Matchups & Predictions")
     today = datetime.date.today()
     url = f"https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={today}"
-    data = requests.get(url).json()
-    games = data.get("dates", [])[0].get("games", []) if data.get("dates") else []
+    response = requests.get(url)
+    data = response.json()
 
-    if not games:
-        st.info("No games scheduled today.")
-    else:
-        st.subheader("🔮 Matchup Predictions")
-        matchups = []
-        for game in games:
-            home_id = game["teams"]["home"]["team"]["id"]
-            away_id = game["teams"]["away"]["team"]["id"]
-            home_abbr = id_to_abbr.get(home_id)
-            away_abbr = id_to_abbr.get(away_id)
-
-            if home_abbr in live_stats_df.index and away_abbr in live_stats_df.index:
-                home_stats = live_stats_df.loc[home_abbr]
-                away_stats = live_stats_df.loc[away_abbr]
-
-                input_df = pd.DataFrame([[
-                    team_map[home_abbr], team_map[away_abbr],
-                    home_stats["win_pct"], away_stats["win_pct"],
-                    home_stats["walks_issued"], away_stats["walks_issued"],
-                    home_stats["strikeouts_thrown"], away_stats["strikeouts_thrown"],
-                    home_stats["total_bases"], away_stats["total_bases"]
-                ]], columns=[
-                    "home_id", "away_id",
-                    "home_win_pct", "away_win_pct",
-                    "Walks Issued - Home", "Walks Issued - Away",
-                    "Strikeouts Thrown - Home", "Strikeouts Thrown - Away",
-                    "Total Bases - Home", "Total Bases - Away"
-                ])
-
-                probs = clf.predict_proba(input_df)[0]
-                class_ids = clf.classes_.tolist()
-                home_id_model = team_map[home_abbr]
-                away_id_model = team_map[away_abbr]
-                home_prob = probs[class_ids.index(home_id_model)] if home_id_model in class_ids else 0
-                away_prob = probs[class_ids.index(away_id_model)] if away_id_model in class_ids else 0
-                winner = home_abbr if home_prob > away_prob else away_abbr
-
-                matchups.append({
-                    "Home": home_abbr,
-                    "Away": away_abbr,
-                    "Predicted Winner": winner,
-                    "Home Win %": round(home_prob * 100, 1),
-                    "Away Win %": round(away_prob * 100, 1),
-                    "Confidence": round(abs(home_prob - away_prob), 3)
-                })
-
-        st.dataframe(pd.DataFrame(matchups))
-
+    id_to_abbr = {v: k for k, v in mlb_team_ids.items()}
+    games = data.get("dates", [])
 
     team_subreddits = {
         "NYY": "NYYankees", "BOS": "RedSox", "LAD": "Dodgers", "CHC": "CHICubs",
@@ -526,7 +398,7 @@ elif page == "Team News Feeds":
         st.info("Schedule not available for league-wide selections.")
 # === Footer ===
 st.markdown("---")
-version = "v5.0 - News & Schedule Integration"
+version = "v4.0 - News & Schedule Integration"
 last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
 
