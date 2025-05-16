@@ -109,8 +109,8 @@ if page == "Single Game Prediction":
             home_stats = team_sma_df.loc[home_team]
             away_stats = team_sma_df.loc[away_team]
 
-            home_win_pct = home_stats["home_win_pct"]
-            away_win_pct = away_stats["away_win_pct"]
+            home_win_pct = home_stats["win_pct"]
+            away_win_pct = away_stats["win_pct"]
             walks_home = home_stats["walks_issued"]
             walks_away = away_stats["walks_issued"]
             k_home = home_stats["strikeouts_thrown"]
@@ -428,6 +428,5 @@ st.markdown("---")
 version = "v4.0 - News & Schedule Integration"
 last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
-
 
 
