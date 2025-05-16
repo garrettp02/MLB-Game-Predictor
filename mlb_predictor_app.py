@@ -132,6 +132,13 @@ if page == "Single Game Prediction":
             home_id = team_map[home_team]
             away_id = team_map[away_team]
 
+            
+            if home_team not in team_map or away_team not in team_map:
+                continue
+
+            home_id = team_map[home]
+            away_id = team_map[away]
+
             input_df = pd.DataFrame([[
                 home_id, away_id,
                 home_win_pct, away_win_pct,
@@ -150,16 +157,13 @@ if page == "Single Game Prediction":
             class_ids = clf.classes_.tolist()
 
             selected = {tid: probs[class_ids.index(tid)] for tid in [home_id, away_id] if tid in class_ids}
-            if not selected:
-                st.error("Neither team is in training data.")
-            elif len(selected) == 1:
-                only_team = reverse_map[list(selected.keys())[0]]
-                st.warning(f"Only one team was in training data. Default winner: {only_team}")
-            else:
+            if selected:
                 winner_id = max(selected, key=selected.get)
                 predicted_winner = reverse_map[winner_id]
-                prob_margin = abs(selected[home_id] - selected[away_id])
-                st.success(f"🏆 Predicted Winner: {predicted_winner}")
+                st.markdown(f"**{home} vs {away}** → 🏆 **{predicted_winner}**")
+            else:
+                st.markdown(f"**{home} vs {away}** → No prediction (team missing from model)")
+
                 st.caption(f"📊 Confidence margin: {prob_margin:.2%}")
 
 
@@ -445,4 +449,3 @@ st.markdown("---")
 version = "v4.0 - News & Schedule Integration"
 last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
-
