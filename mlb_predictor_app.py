@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 clf = joblib.load("xgb_model_updated.pkl")
 team_map = joblib.load("team_map_updated.pkl")
 reverse_map = joblib.load("reverse_map_updated.pkl")
+
+# === Load the 10-game average CSV ===
 @st.cache_data
 def load_team_sma_data():
     try:
@@ -101,21 +103,23 @@ if page == "Single Game Prediction":
             walks_away = st.slider("Walks Issued (Away)", 0.0, 10.0, 2.8)
             k_away = st.slider("Strikeouts Thrown (Away)", 0.0, 15.0, 9.1)
             tb_away = st.slider("Total Bases (Away)", 0.0, 20.0, 11.5)
-    
-else:
+   
+    else:
         if not team_sma_df.empty and home_team in team_sma_df.index and away_team in team_sma_df.index:
-            home_row = team_sma_df.loc[home_team]
-            away_row = team_sma_df.loc[away_team]
+            home_stats = team_sma_df.loc[home_team]
+            away_stats = team_sma_df.loc[away_team]
 
-            home_win_pct = home_row["win_pct"]
-            away_win_pct = away_row["win_pct"]
-            walks_home = home_row["walks_issued"]
-            walks_away = away_row["walks_issued"]
-            k_home = home_row["strikeouts_thrown"]
-            k_away = away_row["strikeouts_thrown"]
-            tb_home = home_row["total_bases"]
-            tb_away = away_row["total_bases"]
+            home_win_pct = home_stats["home_win_pct"]
+            away_win_pct = away_stats["away_win_pct"]
+            walks_home = home_stats["walks_issued"]
+            walks_away = away_stats["walks_issued"]
+            k_home = home_stats["strikeouts_thrown"]
+            k_away = away_stats["strikeouts_thrown"]
+            tb_home = home_stats["total_bases"]
+            tb_away = away_stats["total_bases"]
+    
         else:
+            # Default average stats
             home_win_pct = 0.55
             away_win_pct = 0.48
             walks_home = 3.1
@@ -131,28 +135,6 @@ else:
         else:
             home_id = team_map[home_team]
             away_id = team_map[away_team]
-
-            
-            if not team_sma_df.empty and home in team_sma_df.index and away in team_sma_df.index:
-                home_row = team_sma_df.loc[home]
-                away_row = team_sma_df.loc[away]
-                home_win_pct = home_row["win_pct"]
-                away_win_pct = away_row["win_pct"]
-                walks_home = home_row["walks_issued"]
-                walks_away = away_row["walks_issued"]
-                k_home = home_row["strikeouts_thrown"]
-                k_away = away_row["strikeouts_thrown"]
-                tb_home = home_row["total_bases"]
-                tb_away = away_row["total_bases"]
-            else:
-                home_win_pct = 0.55
-                away_win_pct = 0.48
-                walks_home = 3.1
-                walks_away = 2.8
-                k_home = 8.9
-                k_away = 9.1
-                tb_home = 12.3
-                tb_away = 11.5
 
             input_df = pd.DataFrame([[
                 home_id, away_id,
@@ -197,29 +179,7 @@ elif page == "Batch Predictions":
             home = row["home_team"]
             away = row["away_team"]
             if home in team_map and away in team_map:
-                
-            if not team_sma_df.empty and home in team_sma_df.index and away in team_sma_df.index:
-                home_row = team_sma_df.loc[home]
-                away_row = team_sma_df.loc[away]
-                home_win_pct = home_row["win_pct"]
-                away_win_pct = away_row["win_pct"]
-                walks_home = home_row["walks_issued"]
-                walks_away = away_row["walks_issued"]
-                k_home = home_row["strikeouts_thrown"]
-                k_away = away_row["strikeouts_thrown"]
-                tb_home = home_row["total_bases"]
-                tb_away = away_row["total_bases"]
-            else:
-                home_win_pct = 0.55
-                away_win_pct = 0.48
-                walks_home = 3.1
-                walks_away = 2.8
-                k_home = 8.9
-                k_away = 9.1
-                tb_home = 12.3
-                tb_away = 11.5
-
-            input_df = pd.DataFrame([[team_map[home], team_map[away]]], columns=["home_id", "away_id"])
+                input_df = pd.DataFrame([[team_map[home], team_map[away]]], columns=["home_id", "away_id"])
                 probs = clf.predict_proba(input_df)[0]
                 class_ids = clf.classes_.tolist()
                 selected = {tid: probs[class_ids.index(tid)] for tid in [team_map[home], team_map[away]]}
@@ -298,29 +258,7 @@ if page == "Daily Matchups":
                 away_id = team_map[away_team]
 
                 # Average placeholder values used for new model
-                
-            if not team_sma_df.empty and home in team_sma_df.index and away in team_sma_df.index:
-                home_row = team_sma_df.loc[home]
-                away_row = team_sma_df.loc[away]
-                home_win_pct = home_row["win_pct"]
-                away_win_pct = away_row["win_pct"]
-                walks_home = home_row["walks_issued"]
-                walks_away = away_row["walks_issued"]
-                k_home = home_row["strikeouts_thrown"]
-                k_away = away_row["strikeouts_thrown"]
-                tb_home = home_row["total_bases"]
-                tb_away = away_row["total_bases"]
-            else:
-                home_win_pct = 0.55
-                away_win_pct = 0.48
-                walks_home = 3.1
-                walks_away = 2.8
-                k_home = 8.9
-                k_away = 9.1
-                tb_home = 12.3
-                tb_away = 11.5
-
-            input_df = pd.DataFrame([[
+                input_df = pd.DataFrame([[
                     home_id, away_id,
                     0.50, 0.50,
                     3.0, 3.0,
