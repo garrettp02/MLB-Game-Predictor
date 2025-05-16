@@ -139,6 +139,97 @@ if page == "Single Game Prediction":
                 st.success(f"🏆 Predicted Winner: {predicted_winner}")
                 st.caption(f"📊 Confidence margin: {prob_margin:.2%}")
 
+  mlb_team_ids = {
+        "ARI": 109, "ATL": 144, "BAL": 110, "BOS": 111, "CHC": 112,
+        "CIN": 113, "CLE": 114, "COL": 115, "CHW": 145, "DET": 116,
+        "HOU": 117, "KC": 118, "LAA": 108, "LAD": 119, "MIA": 146,
+        "MIL": 158, "MIN": 142, "NYM": 121, "NYY": 147, "OAK": 133,
+        "PHI": 143, "PIT": 134, "SD": 135, "SEA": 136, "SF": 137,
+        "STL": 138, "TB": 139, "TEX": 140, "TOR": 141, "WSH": 120
+    }
+
+    @st.cache_data(ttl=3600)
+    def get_last_10_game_stats(team_id):
+        schedule_url = f"https://statsapi.mlb.com/api/v1/schedule?teamId={team_id}&season=2025&sportId=1&gameType=R"
+        schedule_data = requests.get(schedule_url).json()
+
+        games = []
+        for date in schedule_data.get("dates", []):
+            for game in date.get("games", []):
+                if game["status"]["abstractGameState"] == "Final":
+                    games.append(game["gamePk"])
+
+        games = sorted(games, reverse=True)[:10]
+
+        total_bases_list = []
+        walks_issued_list = []
+        strikeouts_thrown_list = []
+
+        for game_pk in games:
+            boxscore_url = f"https://statsapi.mlb.com/api/v1/game/{game_pk}/boxscore"
+            box_data = requests.get(boxscore_url).json()
+
+            teams = box_data.get("teams", {})
+            for side in ["home", "away"]:
+                team = teams[side].get("team", {})
+                if team["id"] == team_id:
+                    stats = teams[side].get("teamStats", {})
+                    batting_stats = stats.get("batting", {})
+                    pitching_stats = stats.get("pitching", {})
+
+                    total_bases = batting_stats.get("totalBases", 0)
+                    walks_issued = pitching_stats.get("baseOnBalls", 0)
+                    strikeouts_thrown = pitching_stats.get("strikeOuts", 0)
+
+                    total_bases_list.append(total_bases)
+                    walks_issued_list.append(walks_issued)
+                    strikeouts_thrown_list.append(strikeouts_thrown)
+                    break
+
+        if len(total_bases_list) == 0:
+            return None
+
+        return {
+            "total_bases": round(sum(total_bases_list) / len(total_bases_list), 2),
+            "walks_issued": round(sum(walks_issued_list) / len(walks_issued_list), 2),
+            "strikeouts_thrown": round(sum(strikeouts_thrown_list) / len(strikeouts_thrown_list), 2)
+        }
+
+    def get_win_percentages():
+        standings_url = "https://statsapi.mlb.com/api/v1/standings?season=2025&leagueId=103,104&standingsTypes=regularSeason"
+        standings_data = requests.get(standings_url).json()
+        win_pct_map = {}
+        for record in standings_data.get("records", []):
+            for team_record in record.get("teamRecords", []):
+                team_id = team_record.get("team", {}).get("id")
+                wins = team_record.get("wins", 0)
+                losses = team_record.get("losses", 0)
+                total = wins + losses
+                if total > 0:
+                    win_pct_map[team_id] = round(wins / total, 3)
+        return win_pct_map
+
+    with st.spinner("Fetching 10-game averages from MLB API..."):
+        stats_data = {}
+        win_pct_data = get_win_percentages()
+        for abbr, team_id in mlb_team_ids.items():
+            stats = get_last_10_game_stats(team_id)
+            if stats:
+                stats["win_pct"] = win_pct_data.get(team_id, 0.5)
+                stats_data[abbr] = stats
+
+        if stats_data:
+            df_live = pd.DataFrame.from_dict(stats_data, orient="index").sort_index()
+            st.success("Live stats successfully pulled!")
+            st.dataframe(df_live.style.format({
+                "total_bases": "{:.2f}",
+                "walks_issued": "{:.2f}",
+                "strikeouts_thrown": "{:.2f}",
+                "win_pct": "{:.3f}"
+            }), use_container_width=True)
+        else:
+            st.warning("Could not load stats from the API.")
+
 
 # === Batch Predictions ===
 elif page == "Batch Predictions":
