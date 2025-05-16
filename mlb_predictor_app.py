@@ -277,45 +277,46 @@ if page == "Daily Matchups":
                 walks_away = 2.8
                 k_home = 8.9
                 k_away = 9.1
-                tb_home = 12.3
-                tb_away = 11.5
+tb_home = 12.3
+tb_away = 11.5
+
 input_df = pd.DataFrame([[
-                    home_id, away_id,
-                    0.50, 0.50,
-                    3.0, 3.0,
-                    8.0, 8.0,
-                    12.0, 12.0
-                ]], columns=[
-                    "home_id", "away_id",
-                    "home_win_pct", "away_win_pct",
-                    "Walks Issued - Home", "Walks Issued - Away",
-                    "Strikeouts Thrown - Home", "Strikeouts Thrown - Away",
-                    "Total Bases - Home", "Total Bases - Away"
-                ])
+    home_id, away_id,
+    0.50, 0.50,
+    3.0, 3.0,
+    8.0, 8.0,
+    12.0, 12.0
+]], columns=[
+    "home_id", "away_id",
+    "home_win_pct", "away_win_pct",
+    "Walks Issued - Home", "Walks Issued - Away",
+    "Strikeouts Thrown - Home", "Strikeouts Thrown - Away",
+    "Total Bases - Home", "Total Bases - Away"
+])
 
-                probs = clf.predict_proba(input_df)[0]
-                class_ids = clf.classes_.tolist()
+probs = clf.predict_proba(input_df)[0]
+class_ids = clf.classes_.tolist()
 
-                selected = {tid: probs[class_ids.index(tid)] for tid in [home_id, away_id] if tid in class_ids}
-                if selected:
-                    winner_id = max(selected, key=selected.get)
-                    predicted = reverse_map[winner_id]
-                    margin = abs(selected[home_id] - selected[away_id])
-                else:
-                    predicted = "Unavailable"
-                    margin = 0
+selected = {tid: probs[class_ids.index(tid)] for tid in [home_id, away_id] if tid in class_ids}
+if selected:
+    winner_id = max(selected, key=selected.get)
+    predicted = reverse_map[winner_id]
+    margin = abs(selected[home_id] - selected[away_id])
+else:
+    predicted = "Unavailable"
+    margin = 0
 
-                matchups.append({
-                    "Away": away_team,
-                    "Home": home_team,
-                    "Predicted Winner": predicted,
-                    "Confidence": round(margin, 3),
-                    "Home Win %": round(selected.get(home_id, 0) * 100, 1),
-                    "Away Win %": round(selected.get(away_id, 0) * 100, 1)
-                })
+matchups.append({
+    "Away": away_team,
+    "Home": home_team,
+    "Predicted Winner": predicted,
+    "Confidence": round(margin, 3),
+    "Home Win %": round(selected.get(home_id, 0) * 100, 1),
+    "Away Win %": round(selected.get(away_id, 0) * 100, 1)
+})
 
         view_mode = st.radio("View Mode", ["View All Matchups", "Detailed Matchup View"], horizontal=True)
-
+        
         if view_mode == "View All Matchups":
             st.dataframe(pd.DataFrame(matchups))
             df = pd.DataFrame(matchups)
@@ -325,15 +326,15 @@ input_df = pd.DataFrame([[
             ax.set_title("Prediction Confidence for Today's Matchups")
             ax.set_xticklabels(df["Home"] + " vs " + df["Away"], rotation=45, ha='right')
             st.pyplot(fig)
-
+        
         elif view_mode == "Detailed Matchup View":
             selected_matchup = st.selectbox("Select a Matchup", matchups, format_func=lambda x: f"{x['Away']} @ {x['Home']}")
-
+        
             st.markdown(f"### Predicted Winner: **{selected_matchup['Predicted Winner']}**")
             st.write(f"**Home Win Probability:** {selected_matchup['Home Win %']}%")
             st.write(f"**Away Win Probability:** {selected_matchup['Away Win %']}%")
             st.write(f"**Confidence Margin:** {selected_matchup['Confidence']}")
-
+        
             def display_team_news(team_abbr):
                 team_name_map = {
                     "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
@@ -358,10 +359,10 @@ input_df = pd.DataFrame([[
                             st.write(entry.summary)
                         st.caption(entry.published)
                         st.markdown("---")
-
+        
             display_team_news(selected_matchup["Home"])
             display_top_reddit_post(selected_matchup["Home"])
-
+        
             display_team_news(selected_matchup["Away"])
             display_top_reddit_post(selected_matchup["Away"])
 
@@ -448,6 +449,5 @@ elif page == "Team News Feeds":
 st.markdown("---")
 version = "v4.0 - News & Schedule Integration"
 last_updated = "2025-05-15"
-st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
 
 
