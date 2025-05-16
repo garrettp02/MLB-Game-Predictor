@@ -523,7 +523,7 @@ elif page == "Team News Feeds":
         st.info("Schedule not available for league-wide selections.")
 # === Footer ===
 st.markdown("---")
-version = "v4.0 - News & Schedule Integration"
+version = "v5.0 - News & Schedule Integration"
 last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
 
