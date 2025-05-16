@@ -392,26 +392,26 @@ if page == "Daily Matchups":
                    # "Total Bases - Home", "Total Bases - Away"
                 #])
 
-                probs = clf.predict_proba(input_df)[0]
-                class_ids = clf.classes_.tolist()
-    
-                selected = {tid: probs[class_ids.index(tid)] for tid in [home_id, away_id] if tid in class_ids}
-                if selected:
-                    winner_id = max(selected, key=selected.get)
-                    predicted = reverse_map[winner_id]
-                    margin = abs(selected[home_id] - selected[away_id])
-                else:
-                    predicted = "Unavailable"
-                    margin = 0
-    
-                matchups.append({
-                    "Away": away_team,
-                    "Home": home_team,
-                    "Predicted Winner": predicted,
-                    "Confidence": round(margin, 3),
-                    "Home Win %": round(selected.get(home_id, 0) * 100, 1),
-                    "Away Win %": round(selected.get(away_id, 0) * 100, 1)
-                })
+            probs = clf.predict_proba(input_df)[0]
+            class_ids = clf.classes_.tolist()
+
+            selected = {tid: probs[class_ids.index(tid)] for tid in [home_id, away_id] if tid in class_ids}
+            if selected:
+                winner_id = max(selected, key=selected.get)
+                predicted = reverse_map[winner_id]
+                margin = abs(selected[home_id] - selected[away_id])
+            else:
+                predicted = "Unavailable"
+                margin = 0
+
+            matchups.append({
+                "Away": away_team,
+                "Home": home_team,
+                "Predicted Winner": predicted,
+                "Confidence": round(margin, 3),
+                "Home Win %": round(selected.get(home_id, 0) * 100, 1),
+                "Away Win %": round(selected.get(away_id, 0) * 100, 1)
+            })
 
         view_mode = st.radio("View Mode", ["View All Matchups", "Detailed Matchup View"], horizontal=True)
 
