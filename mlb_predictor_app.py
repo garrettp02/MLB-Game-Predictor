@@ -139,7 +139,7 @@ if page == "Single Game Prediction":
                 st.success(f"🏆 Predicted Winner: {predicted_winner}")
                 st.caption(f"📊 Confidence margin: {prob_margin:.2%}")
 
-  mlb_team_ids = {
+          mlb_team_ids = {
         "ARI": 109, "ATL": 144, "BAL": 110, "BOS": 111, "CHC": 112,
         "CIN": 113, "CLE": 114, "COL": 115, "CHW": 145, "DET": 116,
         "HOU": 117, "KC": 118, "LAA": 108, "LAD": 119, "MIA": 146,
