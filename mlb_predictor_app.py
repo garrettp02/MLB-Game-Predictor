@@ -135,10 +135,9 @@ if page == "Single Game Prediction":
 
             if home_team not in team_map or away_team not in team_map:
                 st.error("One or both teams not found in training data.")
-                return
-
-            home_id = team_map[home]
-            away_id = team_map[away]
+            else:
+                home_id = team_map[home]
+                away_id = team_map[away]
 
             input_df = pd.DataFrame([[
                 home_id, away_id,
