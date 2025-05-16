@@ -132,7 +132,7 @@ if page == "Single Game Prediction":
             home_id = team_map[home_team]
             away_id = team_map[away_team]
 
-            
+
             if home_team not in team_map or away_team not in team_map:
                 continue
 
@@ -258,7 +258,7 @@ if page == "Daily Matchups":
                 away_id = team_map[away_team]
 
                 # Average placeholder values used for new model
-                
+
             if not team_sma_df.empty and home in team_sma_df.index and away in team_sma_df.index:
                 home_row = team_sma_df.loc[home]
                 away_row = team_sma_df.loc[away]
@@ -446,6 +446,8 @@ elif page == "Team News Feeds":
         st.info("Schedule not available for league-wide selections.")
 # === Footer ===
 st.markdown("---")
-version = "v5.0 - News & Schedule Integration"
+version = "v4.0 - News & Schedule Integration"
 last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
+
+
