@@ -13,18 +13,6 @@ clf = joblib.load("xgb_model_updated.pkl")
 team_map = joblib.load("team_map_updated.pkl")
 reverse_map = joblib.load("reverse_map_updated.pkl")
 
-# === Load the 10-game average CSV ===
-@st.cache_data
-def load_team_sma_data():
-    try:
-        return pd.read_csv("10game_sma_stats.csv", index_col=0)
-    except:
-        st.warning("Could not load 10-game average CSV.")
-        return pd.DataFrame()
-
-team_sma_df = load_team_sma_data()
-
-
 
 # === Team logos map ===
 team_logos = {
@@ -76,7 +64,7 @@ id_to_abbr = {v: k for k, v in mlb_team_ids.items()}
 filtered_team_keys = [key for key in sorted(team_map.keys()) if key not in ("AL", "NL")]
 
 st.sidebar.title("MLB Predictor Navigation")
-page = st.sidebar.radio("Go to", ["Single Game Prediction", "Batch Predictions", "Team News Feeds", "Daily Matchups"])
+page = st.sidebar.radio("Go to", ["Single Game Prediction", "Batch Predictions", "Team News Feeds", "Daily Matchups", "10-Game Averages"])
 
 # === Single Game Prediction ===
 if page == "Single Game Prediction":
@@ -103,31 +91,16 @@ if page == "Single Game Prediction":
             walks_away = st.slider("Walks Issued (Away)", 0.0, 10.0, 2.8)
             k_away = st.slider("Strikeouts Thrown (Away)", 0.0, 15.0, 9.1)
             tb_away = st.slider("Total Bases (Away)", 0.0, 20.0, 11.5)
-   
     else:
-        if not team_sma_df.empty and home_team in team_sma_df.index and away_team in team_sma_df.index:
-            home_stats = team_sma_df.loc[home_team]
-            away_stats = team_sma_df.loc[away_team]
-
-            home_win_pct = home_stats["win_pct"]
-            away_win_pct = away_stats["win_pct"]
-            walks_home = home_stats["walks_issued"]
-            walks_away = away_stats["walks_issued"]
-            k_home = home_stats["strikeouts_thrown"]
-            k_away = away_stats["strikeouts_thrown"]
-            tb_home = home_stats["total_bases"]
-            tb_away = away_stats["total_bases"]
-    
-        else:
-            # Default average stats
-            home_win_pct = 0.55
-            away_win_pct = 0.48
-            walks_home = 3.1
-            walks_away = 2.8
-            k_home = 8.9
-            k_away = 9.1
-            tb_home = 12.3
-            tb_away = 11.5
+        # Default average stats
+        home_win_pct = 0.55
+        away_win_pct = 0.48
+        walks_home = 3.1
+        walks_away = 2.8
+        k_home = 8.9
+        k_away = 9.1
+        tb_home = 12.3
+        tb_away = 11.5
 
     if st.button("Predict Winner"):
         if home_team not in team_map or away_team not in team_map:
@@ -344,6 +317,101 @@ if page == "Daily Matchups":
             display_team_news(selected_matchup["Away"])
             display_top_reddit_post(selected_matchup["Away"])
 
+elif page == "10-Game Averages":
+    st.title("📊 10-Game Simple Moving Averages (Live)")
+
+    mlb_team_ids = {
+        "ARI": 109, "ATL": 144, "BAL": 110, "BOS": 111, "CHC": 112,
+        "CIN": 113, "CLE": 114, "COL": 115, "CHW": 145, "DET": 116,
+        "HOU": 117, "KC": 118, "LAA": 108, "LAD": 119, "MIA": 146,
+        "MIL": 158, "MIN": 142, "NYM": 121, "NYY": 147, "OAK": 133,
+        "PHI": 143, "PIT": 134, "SD": 135, "SEA": 136, "SF": 137,
+        "STL": 138, "TB": 139, "TEX": 140, "TOR": 141, "WSH": 120
+    }
+
+    @st.cache_data(ttl=3600)
+    def get_last_10_game_stats(team_id):
+        schedule_url = f"https://statsapi.mlb.com/api/v1/schedule?teamId={team_id}&season=2025&sportId=1&gameType=R"
+        schedule_data = requests.get(schedule_url).json()
+
+        games = []
+        for date in schedule_data.get("dates", []):
+            for game in date.get("games", []):
+                if game["status"]["abstractGameState"] == "Final":
+                    games.append(game["gamePk"])
+
+        games = sorted(games, reverse=True)[:10]
+
+        total_bases_list = []
+        walks_issued_list = []
+        strikeouts_thrown_list = []
+
+        for game_pk in games:
+            boxscore_url = f"https://statsapi.mlb.com/api/v1/game/{game_pk}/boxscore"
+            box_data = requests.get(boxscore_url).json()
+
+            teams = box_data.get("teams", {})
+            for side in ["home", "away"]:
+                team = teams[side].get("team", {})
+                if team["id"] == team_id:
+                    stats = teams[side].get("teamStats", {})
+                    batting_stats = stats.get("batting", {})
+                    pitching_stats = stats.get("pitching", {})
+
+                    total_bases = batting_stats.get("totalBases", 0)
+                    walks_issued = pitching_stats.get("baseOnBalls", 0)
+                    strikeouts_thrown = pitching_stats.get("strikeOuts", 0)
+
+                    total_bases_list.append(total_bases)
+                    walks_issued_list.append(walks_issued)
+                    strikeouts_thrown_list.append(strikeouts_thrown)
+                    break
+
+        if len(total_bases_list) == 0:
+            return None
+
+        return {
+            "total_bases": round(sum(total_bases_list) / len(total_bases_list), 2),
+            "walks_issued": round(sum(walks_issued_list) / len(walks_issued_list), 2),
+            "strikeouts_thrown": round(sum(strikeouts_thrown_list) / len(strikeouts_thrown_list), 2)
+        }
+
+    def get_win_percentages():
+        standings_url = "https://statsapi.mlb.com/api/v1/standings?season=2025&leagueId=103,104&standingsTypes=regularSeason"
+        standings_data = requests.get(standings_url).json()
+        win_pct_map = {}
+        for record in standings_data.get("records", []):
+            for team_record in record.get("teamRecords", []):
+                team_id = team_record.get("team", {}).get("id")
+                wins = team_record.get("wins", 0)
+                losses = team_record.get("losses", 0)
+                total = wins + losses
+                if total > 0:
+                    win_pct_map[team_id] = round(wins / total, 3)
+        return win_pct_map
+
+    with st.spinner("Fetching 10-game averages from MLB API..."):
+        stats_data = {}
+        win_pct_data = get_win_percentages()
+        for abbr, team_id in mlb_team_ids.items():
+            stats = get_last_10_game_stats(team_id)
+            if stats:
+                stats["win_pct"] = win_pct_data.get(team_id, 0.5)
+                stats_data[abbr] = stats
+
+        if stats_data:
+            df_live = pd.DataFrame.from_dict(stats_data, orient="index").sort_index()
+            st.success("Live stats successfully pulled!")
+            st.dataframe(df_live.style.format({
+                "total_bases": "{:.2f}",
+                "walks_issued": "{:.2f}",
+                "strikeouts_thrown": "{:.2f}",
+                "win_pct": "{:.3f}"
+            }), use_container_width=True)
+        else:
+            st.warning("Could not load stats from the API.")
+
+
 # === Live News Feeds ===
 elif page == "Team News Feeds":
     st.title("📰 MLB Team News Feed")
@@ -428,5 +496,6 @@ st.markdown("---")
 version = "v4.0 - News & Schedule Integration"
 last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
+
 
 
