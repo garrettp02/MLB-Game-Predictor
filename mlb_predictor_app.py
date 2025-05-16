@@ -394,7 +394,7 @@ if page == "Daily Matchups":
 
                 probs = clf.predict_proba(input_df)[0]
                 class_ids = clf.classes_.tolist()
-
+    
                 selected = {tid: probs[class_ids.index(tid)] for tid in [home_id, away_id] if tid in class_ids}
                 if selected:
                     winner_id = max(selected, key=selected.get)
@@ -403,7 +403,7 @@ if page == "Daily Matchups":
                 else:
                     predicted = "Unavailable"
                     margin = 0
-
+    
                 matchups.append({
                     "Away": away_team,
                     "Home": home_team,
@@ -641,7 +641,8 @@ elif page == "Team News Feeds":
         st.info("Schedule not available for league-wide selections.")
 # === Footer ===
 st.markdown("---")
-version = "v5.0 - Live Data"
+version = "v4.0 - News & Schedule Integration"
 last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
+
 
