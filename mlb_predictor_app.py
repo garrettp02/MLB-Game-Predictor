@@ -15,6 +15,17 @@ reverse_map = joblib.load("reverse_map_updated.pkl")
 
 
 # === Team logos map ===
+
+# === Load 10-Game SMA Stats from CSV ===
+@st.cache_data
+def load_custom_team_stats():
+    try:
+        return pd.read_csv("10game_sma_stats.csv", index_col=0)
+    except:
+        st.warning("SMA CSV file not found. Using fallback averages.")
+        return pd.DataFrame()
+
+team_sma_df = load_custom_team_stats()
 team_logos = {
     "ARI": "https://a.espncdn.com/i/teamlogos/mlb/500/ari.png",
     "ATL": "https://a.espncdn.com/i/teamlogos/mlb/500/atl.png",
@@ -92,15 +103,27 @@ if page == "Single Game Prediction":
             k_away = st.slider("Strikeouts Thrown (Away)", 0.0, 15.0, 9.1)
             tb_away = st.slider("Total Bases (Away)", 0.0, 20.0, 11.5)
     else:
-        # Default average stats
-        home_win_pct = 0.55
-        away_win_pct = 0.48
-        walks_home = 3.1
-        walks_away = 2.8
-        k_home = 8.9
-        k_away = 9.1
-        tb_home = 12.3
-        tb_away = 11.5
+        if not team_sma_df.empty:
+            home_stats = team_sma_df.loc[home_team]
+            away_stats = team_sma_df.loc[away_team]
+
+            home_win_pct = home_stats["win_pct"]
+            away_win_pct = away_stats["win_pct"]
+            walks_home = home_stats["walks_issued"]
+            walks_away = away_stats["walks_issued"]
+            k_home = home_stats["strikeouts_thrown"]
+            k_away = away_stats["strikeouts_thrown"]
+            tb_home = home_stats["total_bases"]
+            tb_away = away_stats["total_bases"]
+        else:
+            home_win_pct = 0.55
+            away_win_pct = 0.48
+            walks_home = 3.1
+            walks_away = 2.8
+            k_home = 8.9
+            k_away = 9.1
+            tb_home = 12.3
+            tb_away = 11.5
 
     if st.button("Predict Winner"):
         if home_team not in team_map or away_team not in team_map:
@@ -231,7 +254,28 @@ if page == "Daily Matchups":
                 away_id = team_map[away_team]
 
                 # Average placeholder values used for new model
-                input_df = pd.DataFrame([[
+                
+            if not team_sma_df.empty and home in team_sma_df.index and away in team_sma_df.index:
+                home_row = team_sma_df.loc[home]
+                away_row = team_sma_df.loc[away]
+                home_win_pct = home_row["win_pct"]
+                away_win_pct = away_row["win_pct"]
+                walks_home = home_row["walks_issued"]
+                walks_away = away_row["walks_issued"]
+                k_home = home_row["strikeouts_thrown"]
+                k_away = away_row["strikeouts_thrown"]
+                tb_home = home_row["total_bases"]
+                tb_away = away_row["total_bases"]
+            else:
+                home_win_pct = 0.55
+                away_win_pct = 0.48
+                walks_home = 3.1
+                walks_away = 2.8
+                k_home = 8.9
+                k_away = 9.1
+                tb_home = 12.3
+                tb_away = 11.5
+input_df = pd.DataFrame([[
                     home_id, away_id,
                     0.50, 0.50,
                     3.0, 3.0,
