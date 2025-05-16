@@ -134,7 +134,8 @@ if page == "Single Game Prediction":
 
 
             if home_team not in team_map or away_team not in team_map:
-                continue
+                st.error("One or both teams not found in training data.")
+                return
 
             home_id = team_map[home]
             away_id = team_map[away]
@@ -450,6 +451,5 @@ st.markdown("---")
 version = "v4.0 - News & Schedule Integration"
 last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
-
 
 
