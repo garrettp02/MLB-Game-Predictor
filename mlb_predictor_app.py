@@ -12,20 +12,19 @@ import matplotlib.pyplot as plt
 clf = joblib.load("xgb_model_updated.pkl")
 team_map = joblib.load("team_map_updated.pkl")
 reverse_map = joblib.load("reverse_map_updated.pkl")
-
-
-# === Team logos map ===
-
-# === Load 10-Game SMA Stats from CSV ===
 @st.cache_data
-def load_custom_team_stats():
+def load_team_sma_data():
     try:
         return pd.read_csv("10game_sma_stats.csv", index_col=0)
     except:
-        st.warning("SMA CSV file not found. Using fallback averages.")
+        st.warning("Could not load 10-game average CSV.")
         return pd.DataFrame()
 
-team_sma_df = load_custom_team_stats()
+team_sma_df = load_team_sma_data()
+
+
+
+# === Team logos map ===
 team_logos = {
     "ARI": "https://a.espncdn.com/i/teamlogos/mlb/500/ari.png",
     "ATL": "https://a.espncdn.com/i/teamlogos/mlb/500/atl.png",
@@ -102,19 +101,20 @@ if page == "Single Game Prediction":
             walks_away = st.slider("Walks Issued (Away)", 0.0, 10.0, 2.8)
             k_away = st.slider("Strikeouts Thrown (Away)", 0.0, 15.0, 9.1)
             tb_away = st.slider("Total Bases (Away)", 0.0, 20.0, 11.5)
-    else:
-        if not team_sma_df.empty:
-            home_stats = team_sma_df.loc[home_team]
-            away_stats = team_sma_df.loc[away_team]
+    
+else:
+        if not team_sma_df.empty and home_team in team_sma_df.index and away_team in team_sma_df.index:
+            home_row = team_sma_df.loc[home_team]
+            away_row = team_sma_df.loc[away_team]
 
-            home_win_pct = home_stats["win_pct"]
-            away_win_pct = away_stats["win_pct"]
-            walks_home = home_stats["walks_issued"]
-            walks_away = away_stats["walks_issued"]
-            k_home = home_stats["strikeouts_thrown"]
-            k_away = away_stats["strikeouts_thrown"]
-            tb_home = home_stats["total_bases"]
-            tb_away = away_stats["total_bases"]
+            home_win_pct = home_row["win_pct"]
+            away_win_pct = away_row["win_pct"]
+            walks_home = home_row["walks_issued"]
+            walks_away = away_row["walks_issued"]
+            k_home = home_row["strikeouts_thrown"]
+            k_away = away_row["strikeouts_thrown"]
+            tb_home = home_row["total_bases"]
+            tb_away = away_row["total_bases"]
         else:
             home_win_pct = 0.55
             away_win_pct = 0.48
@@ -132,12 +132,27 @@ if page == "Single Game Prediction":
             home_id = team_map[home_team]
             away_id = team_map[away_team]
 
-
-            if home_team not in team_map or away_team not in team_map:
-                st.error("One or both teams not found in training data.")
+            
+            if not team_sma_df.empty and home in team_sma_df.index and away in team_sma_df.index:
+                home_row = team_sma_df.loc[home]
+                away_row = team_sma_df.loc[away]
+                home_win_pct = home_row["win_pct"]
+                away_win_pct = away_row["win_pct"]
+                walks_home = home_row["walks_issued"]
+                walks_away = away_row["walks_issued"]
+                k_home = home_row["strikeouts_thrown"]
+                k_away = away_row["strikeouts_thrown"]
+                tb_home = home_row["total_bases"]
+                tb_away = away_row["total_bases"]
             else:
-                home_id = team_map[home]
-                away_id = team_map[away]
+                home_win_pct = 0.55
+                away_win_pct = 0.48
+                walks_home = 3.1
+                walks_away = 2.8
+                k_home = 8.9
+                k_away = 9.1
+                tb_home = 12.3
+                tb_away = 11.5
 
             input_df = pd.DataFrame([[
                 home_id, away_id,
@@ -157,13 +172,16 @@ if page == "Single Game Prediction":
             class_ids = clf.classes_.tolist()
 
             selected = {tid: probs[class_ids.index(tid)] for tid in [home_id, away_id] if tid in class_ids}
-            if selected:
+            if not selected:
+                st.error("Neither team is in training data.")
+            elif len(selected) == 1:
+                only_team = reverse_map[list(selected.keys())[0]]
+                st.warning(f"Only one team was in training data. Default winner: {only_team}")
+            else:
                 winner_id = max(selected, key=selected.get)
                 predicted_winner = reverse_map[winner_id]
-                st.markdown(f"**{home} vs {away}** → 🏆 **{predicted_winner}**")
-            else:
-                st.markdown(f"**{home} vs {away}** → No prediction (team missing from model)")
-
+                prob_margin = abs(selected[home_id] - selected[away_id])
+                st.success(f"🏆 Predicted Winner: {predicted_winner}")
                 st.caption(f"📊 Confidence margin: {prob_margin:.2%}")
 
 
@@ -179,7 +197,29 @@ elif page == "Batch Predictions":
             home = row["home_team"]
             away = row["away_team"]
             if home in team_map and away in team_map:
-                input_df = pd.DataFrame([[team_map[home], team_map[away]]], columns=["home_id", "away_id"])
+                
+            if not team_sma_df.empty and home in team_sma_df.index and away in team_sma_df.index:
+                home_row = team_sma_df.loc[home]
+                away_row = team_sma_df.loc[away]
+                home_win_pct = home_row["win_pct"]
+                away_win_pct = away_row["win_pct"]
+                walks_home = home_row["walks_issued"]
+                walks_away = away_row["walks_issued"]
+                k_home = home_row["strikeouts_thrown"]
+                k_away = away_row["strikeouts_thrown"]
+                tb_home = home_row["total_bases"]
+                tb_away = away_row["total_bases"]
+            else:
+                home_win_pct = 0.55
+                away_win_pct = 0.48
+                walks_home = 3.1
+                walks_away = 2.8
+                k_home = 8.9
+                k_away = 9.1
+                tb_home = 12.3
+                tb_away = 11.5
+
+            input_df = pd.DataFrame([[team_map[home], team_map[away]]], columns=["home_id", "away_id"])
                 probs = clf.predict_proba(input_df)[0]
                 class_ids = clf.classes_.tolist()
                 selected = {tid: probs[class_ids.index(tid)] for tid in [team_map[home], team_map[away]]}
@@ -258,7 +298,7 @@ if page == "Daily Matchups":
                 away_id = team_map[away_team]
 
                 # Average placeholder values used for new model
-
+                
             if not team_sma_df.empty and home in team_sma_df.index and away in team_sma_df.index:
                 home_row = team_sma_df.loc[home]
                 away_row = team_sma_df.loc[away]
@@ -277,94 +317,94 @@ if page == "Daily Matchups":
                 walks_away = 2.8
                 k_home = 8.9
                 k_away = 9.1
-tb_home = 12.3
-tb_away = 11.5
+                tb_home = 12.3
+                tb_away = 11.5
 
-input_df = pd.DataFrame([[
-    home_id, away_id,
-    0.50, 0.50,
-    3.0, 3.0,
-    8.0, 8.0,
-    12.0, 12.0
-]], columns=[
-    "home_id", "away_id",
-    "home_win_pct", "away_win_pct",
-    "Walks Issued - Home", "Walks Issued - Away",
-    "Strikeouts Thrown - Home", "Strikeouts Thrown - Away",
-    "Total Bases - Home", "Total Bases - Away"
-])
+            input_df = pd.DataFrame([[
+                    home_id, away_id,
+                    0.50, 0.50,
+                    3.0, 3.0,
+                    8.0, 8.0,
+                    12.0, 12.0
+                ]], columns=[
+                    "home_id", "away_id",
+                    "home_win_pct", "away_win_pct",
+                    "Walks Issued - Home", "Walks Issued - Away",
+                    "Strikeouts Thrown - Home", "Strikeouts Thrown - Away",
+                    "Total Bases - Home", "Total Bases - Away"
+                ])
 
-probs = clf.predict_proba(input_df)[0]
-class_ids = clf.classes_.tolist()
+                probs = clf.predict_proba(input_df)[0]
+                class_ids = clf.classes_.tolist()
 
-selected = {tid: probs[class_ids.index(tid)] for tid in [home_id, away_id] if tid in class_ids}
-if selected:
-    winner_id = max(selected, key=selected.get)
-    predicted = reverse_map[winner_id]
-    margin = abs(selected[home_id] - selected[away_id])
-else:
-    predicted = "Unavailable"
-    margin = 0
+                selected = {tid: probs[class_ids.index(tid)] for tid in [home_id, away_id] if tid in class_ids}
+                if selected:
+                    winner_id = max(selected, key=selected.get)
+                    predicted = reverse_map[winner_id]
+                    margin = abs(selected[home_id] - selected[away_id])
+                else:
+                    predicted = "Unavailable"
+                    margin = 0
 
-    matchups.append({
-        "Away": away_team,
-        "Home": home_team,
-        "Predicted Winner": predicted,
-        "Confidence": round(margin, 3),
-        "Home Win %": round(selected.get(home_id, 0) * 100, 1),
-        "Away Win %": round(selected.get(away_id, 0) * 100, 1)
-    })
+                matchups.append({
+                    "Away": away_team,
+                    "Home": home_team,
+                    "Predicted Winner": predicted,
+                    "Confidence": round(margin, 3),
+                    "Home Win %": round(selected.get(home_id, 0) * 100, 1),
+                    "Away Win %": round(selected.get(away_id, 0) * 100, 1)
+                })
 
-view_mode = st.radio("View Mode", ["View All Matchups", "Detailed Matchup View"], horizontal=True)
+        view_mode = st.radio("View Mode", ["View All Matchups", "Detailed Matchup View"], horizontal=True)
 
-if view_mode == "View All Matchups":
-    st.dataframe(pd.DataFrame(matchups))
-    df = pd.DataFrame(matchups)
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.bar(df["Home"] + " vs " + df["Away"], df["Confidence"], color="skyblue")
-    ax.set_ylabel("Confidence")
-    ax.set_title("Prediction Confidence for Today's Matchups")
-    ax.set_xticklabels(df["Home"] + " vs " + df["Away"], rotation=45, ha='right')
-    st.pyplot(fig)
+        if view_mode == "View All Matchups":
+            st.dataframe(pd.DataFrame(matchups))
+            df = pd.DataFrame(matchups)
+            fig, ax = plt.subplots(figsize=(8, 5))
+            ax.bar(df["Home"] + " vs " + df["Away"], df["Confidence"], color="skyblue")
+            ax.set_ylabel("Confidence")
+            ax.set_title("Prediction Confidence for Today's Matchups")
+            ax.set_xticklabels(df["Home"] + " vs " + df["Away"], rotation=45, ha='right')
+            st.pyplot(fig)
 
-elif view_mode == "Detailed Matchup View":
-    selected_matchup = st.selectbox("Select a Matchup", matchups, format_func=lambda x: f"{x['Away']} @ {x['Home']}")
+        elif view_mode == "Detailed Matchup View":
+            selected_matchup = st.selectbox("Select a Matchup", matchups, format_func=lambda x: f"{x['Away']} @ {x['Home']}")
 
-    st.markdown(f"### Predicted Winner: **{selected_matchup['Predicted Winner']}**")
-    st.write(f"**Home Win Probability:** {selected_matchup['Home Win %']}%")
-    st.write(f"**Away Win Probability:** {selected_matchup['Away Win %']}%")
-    st.write(f"**Confidence Margin:** {selected_matchup['Confidence']}")
+            st.markdown(f"### Predicted Winner: **{selected_matchup['Predicted Winner']}**")
+            st.write(f"**Home Win Probability:** {selected_matchup['Home Win %']}%")
+            st.write(f"**Away Win Probability:** {selected_matchup['Away Win %']}%")
+            st.write(f"**Confidence Margin:** {selected_matchup['Confidence']}")
 
-    def display_team_news(team_abbr):
-        team_name_map = {
-            "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
-            "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
-            "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
-            "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
-            "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
-            "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
-            "SF": "giants", "STL": "cardinals", "TB": "rays", "TEX": "rangers",
-            "TOR": "bluejays", "WSH": "nationals"
-        }
-        team_name = team_name_map.get(team_abbr, team_abbr.lower())
-        feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
-        feed = feedparser.parse(feed_url)
-        st.subheader(f"🗞️ News for {team_abbr}")
-        if not feed.entries:
-            st.warning("No recent news found or feed unavailable.")
-        else:
-            for entry in feed.entries[:3]:
-                st.markdown(f"**[{entry.title}]({entry.link})**")
-                if hasattr(entry, "summary"):
-                    st.write(entry.summary)
-                st.caption(entry.published)
-                st.markdown("---")
+            def display_team_news(team_abbr):
+                team_name_map = {
+                    "ARI": "dbacks", "ATL": "braves", "BAL": "orioles", "BOS": "redsox",
+                    "CHC": "cubs", "CIN": "reds", "CLE": "guardians", "COL": "rockies",
+                    "CHW": "whitesox", "DET": "tigers", "HOU": "astros", "KC": "royals",
+                    "LAA": "angels", "LAD": "dodgers", "MIA": "marlins", "MIL": "brewers",
+                    "MIN": "twins", "NYM": "mets", "NYY": "yankees", "OAK": "athletics",
+                    "PHI": "phillies", "PIT": "pirates", "SD": "padres", "SEA": "mariners",
+                    "SF": "giants", "STL": "cardinals", "TB": "rays", "TEX": "rangers",
+                    "TOR": "bluejays", "WSH": "nationals"
+                }
+                team_name = team_name_map.get(team_abbr, team_abbr.lower())
+                feed_url = f"https://www.mlb.com/{team_name}/feeds/news/rss.xml"
+                feed = feedparser.parse(feed_url)
+                st.subheader(f"🗞️ News for {team_abbr}")
+                if not feed.entries:
+                    st.warning("No recent news found or feed unavailable.")
+                else:
+                    for entry in feed.entries[:3]:
+                        st.markdown(f"**[{entry.title}]({entry.link})**")
+                        if hasattr(entry, "summary"):
+                            st.write(entry.summary)
+                        st.caption(entry.published)
+                        st.markdown("---")
 
-    display_team_news(selected_matchup["Home"])
-    display_top_reddit_post(selected_matchup["Home"])
+            display_team_news(selected_matchup["Home"])
+            display_top_reddit_post(selected_matchup["Home"])
 
-    display_team_news(selected_matchup["Away"])
-    display_top_reddit_post(selected_matchup["Away"])
+            display_team_news(selected_matchup["Away"])
+            display_top_reddit_post(selected_matchup["Away"])
 
 # === Live News Feeds ===
 elif page == "Team News Feeds":
@@ -450,5 +490,6 @@ st.markdown("---")
 version = "v4.0 - News & Schedule Integration"
 last_updated = "2025-05-15"
 st.caption(f"🔢 App Version: **{version}**  |  🕒 Last Updated: {last_updated}")
+
 
 
