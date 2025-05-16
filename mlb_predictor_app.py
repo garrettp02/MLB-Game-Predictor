@@ -339,10 +339,16 @@ if page == "Daily Matchups":
                 away_id = team_map[away_team]
             
             # Pull live API stats
-            home_stats = get_last_10_game_stats(mlb_team_ids[home])
-            away_stats = get_last_10_game_stats(mlb_team_ids[away])
-            home_win_pct = get_team_win_pct(home)
-            away_win_pct = get_team_win_pct(away)
+            if home_team is not None and away_team is not None and home_team in mlb_team_ids and away_team in mlb_team_ids:
+                home_stats = get_last_10_game_stats(mlb_team_ids[home_team])
+                away_stats = get_last_10_game_stats(mlb_team_ids[away_team])
+                home_win_pct = get_team_win_pct(home_team)
+                away_win_pct = get_team_win_pct(away_team)
+            else:
+                home_stats = None
+                away_stats = None
+                home_win_pct = 0.5
+                away_win_pct = 0.5
 
             # Use fallback if API fails
             if home_stats and away_stats:
